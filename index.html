@@ -79,32 +79,6 @@ box-shadow:0 4px 16px #17352a18}
 </style>
 <style id="cc-style">.cc-details,.cc-detail-view{display:none;max-width:1050px;margin:0 auto;padding:0 16px 45px}.cc-details.active,.cc-detail-view.active{display:block}.cc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.cc-card,.cc-detail-card{background:#fff;border:1px solid #dbe4de;border-radius:12px;padding:16px;box-shadow:0 3px 12px #17352a0c}.cc-number{display:block;text-decoration:none;background:#17352a;color:#fff;border-radius:9px;padding:12px;text-align:center;font-weight:900;font-size:18px;margin-bottom:10px}.cc-meta,.cc-status,.cc-nature{margin:7px 0;line-height:1.45}.cc-number:hover{background:#2e5940}@media(max-width:700px){.cc-grid{grid-template-columns:1fr}}</style><style>
 .detail-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:22px}.detail-choice{display:block;padding:22px;border:1px solid rgba(0,0,0,.12);border-radius:18px;text-decoration:none;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.06)}.choice-title{display:block;font-size:20px;font-weight:800}.choice-sub{display:block;margin-top:8px;line-height:1.55;opacity:.75}.history-wrap{max-width:1000px;margin:auto}.case-history-list{display:grid;gap:14px;margin-top:20px}.history-card{padding:18px 20px;border:1px solid rgba(0,0,0,.1);border-radius:16px;background:#fff;box-shadow:0 5px 18px rgba(0,0,0,.05)}.history-card h3{margin:0 0 10px;font-size:18px}.history-card p{margin:7px 0;line-height:1.55}.witness-table th,.witness-table td{vertical-align:top;line-height:1.5}.witness-table td:first-child{font-weight:800;white-space:nowrap}@media(max-width:700px){.detail-choice-grid{grid-template-columns:1fr}.witness-table{font-size:13px}}
-</style><style id="login-style">
-#loginOverlay{
-  position:fixed;inset:0;z-index:99999;
-  display:flex !important;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,#17352a,#2e5940);
-  padding:20px;
-}
-#loginBox{
-  width:min(390px,100%);background:#fff;border-radius:18px;
-  padding:28px 24px;box-shadow:0 15px 45px #0005;
-}
-#loginBox h2{margin:0 0 6px;font-size:26px;color:#17352a}
-#loginBox .login-sub{margin:0 0 22px;color:#68766f;font-size:13px}
-#loginBox label{display:block;font-size:12px;font-weight:800;color:#43534b;margin:12px 0 6px}
-#loginBox input{
-  width:100%;padding:12px 13px;border:1px solid #dbe4de;border-radius:9px;
-  font-size:15px;outline:none;
-}
-#loginBox input:focus{border-color:#76c442;box-shadow:0 0 0 3px #76c44222}
-#loginBox button{
-  width:100%;margin-top:18px;padding:13px;border:0;border-radius:10px;
-  background:#17352a;color:#fff;font-size:15px;font-weight:800;cursor:pointer;
-}
-#loginBox button:hover{background:#2e5940}
-#loginError{display:none;margin-top:12px;color:#b42318;font-size:12px;font-weight:800;text-align:center}
-
 </style>
 <style id="case-search-style">
 .case-tools{max-width:1050px;margin:12px auto 16px;padding:0 16px}
@@ -123,6 +97,70 @@ box-shadow:0 4px 16px #17352a18}
 .photo-tools{max-width:1050px;margin:0 auto 14px;padding:0 16px}.photo-tools a{display:block;text-align:center;text-decoration:none;background:#eef6ef;color:var(--deep);border:1px solid #cfe0d2;border-radius:10px;padding:11px;font-weight:900}
 @media(max-width:600px){.case-tools{padding:0 10px}.case-search-row{flex-wrap:wrap}.case-search{flex-basis:100%}.case-search-btn,.case-clear-btn{flex:1}.photo-tools{padding:0 10px}}
 </style>
+
+<style id="professional-upgrade">
+:root{
+  --green:#176b45;
+  --deep:#12382a;
+  --light:#f5f8f6;
+  --gold:#c8a951;
+}
+body{background:linear-gradient(180deg,#f3f7f4 0%,#ffffff 38%);color:#18382c}
+.hero{
+  padding:34px 18px 30px;
+  background:linear-gradient(135deg,#0e3526 0%,#176b45 58%,#2b8058 100%);
+  position:relative;overflow:hidden
+}
+.hero:after{
+  content:"";position:absolute;inset:auto -10% -55px -10%;height:110px;
+  background:#fff;border-radius:50% 50% 0 0/45% 45% 0 0;opacity:.08
+}
+.hero-in{position:relative;z-index:1}
+.brand{font-size:12px;letter-spacing:3px}
+h1{font-size:clamp(25px,5vw,36px);font-weight:900;letter-spacing:.3px}
+.sub{font-size:13px}
+.case-tools{margin-top:18px}
+.case-tools-box{
+  border:0;border-radius:16px;padding:18px;
+  box-shadow:0 8px 28px rgba(18,56,42,.10)
+}
+.case-tools-title{font-size:16px}
+.case-search{border-radius:11px}
+.case-search-btn{background:var(--green);transition:.2s}
+.case-search-btn:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.case-clear-btn{border:1px solid #d7e2dc}
+.year-nav{
+  background:rgba(255,255,255,.92);
+  border-radius:16px;margin-top:8px;
+  box-shadow:0 6px 22px rgba(18,56,42,.07)
+}
+.year-btn{transition:.2s}
+.year-btn:hover{transform:translateY(-2px);box-shadow:0 5px 12px rgba(18,56,42,.10)}
+.year-btn:focus-visible,.case-search:focus-visible,
+button:focus-visible,a:focus-visible{outline:3px solid #c8a951;outline-offset:2px}
+.year-head,.running-head,.analysis-head,.accused-head{
+  box-shadow:0 6px 22px rgba(18,56,42,.08)
+}
+.stat{transition:.2s}
+.stat:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(18,56,42,.08)}
+.case-analysis-btn a,.accused-details-btn a{
+  border-radius:11px;transition:.2s
+}
+.case-analysis-btn a:hover,.accused-details-btn a:hover{
+  transform:translateY(-1px);filter:brightness(1.05)
+}
+.pdf-card,.analysis-card,.accused-card,.cc-card,.cc-detail-card,.history-card{
+  box-shadow:0 5px 18px rgba(18,56,42,.07)
+}
+.top{background:var(--green);color:#fff}
+@media(max-width:600px){
+  .hero{padding:27px 14px 24px}
+  .case-tools-box{padding:14px}
+  .year-nav{gap:6px}
+  .year-btn{padding:9px 2px;font-size:12px}
+}
+</style>
+
 </head>
 <body>
 
@@ -136,6 +174,7 @@ box-shadow:0 4px 16px #17352a18}
 <button class="case-clear-btn" id="caseClearBtn" type="button">CLEAR</button>
 </div>
 <div class="case-hint">Case number, OR number, year, or status ഉപയോഗിച്ച് search ചെയ്യാം.</div>
+<div style="font-size:11px;color:#68766f;margin-top:7px">IRULAM FOREST STATION • Official Case Record Portal</div>
 <div class="case-results" id="caseResults"></div>
 </div>
 </section>
