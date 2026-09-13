@@ -506,4 +506,43 @@ window.addEventListener('hashchange',function(){if(location.hash==='#cc-details'
 <tr><td>Crl.MP(Ab) 3/2026 (Absent Petition)</td><td>Offline</td><td>09-07-2026</td><td>09-07-2026</td><td>Joseph</td><td>Disposed</td><td>—</td><td>—</td></tr>
 </tbody></table></div>
 </div></section>
+
+<div id="loginOverlay">
+  <div id="loginBox">
+    <h2>Login</h2>
+    <p class="login-sub">Please enter your User ID and Password</p>
+    <form id="loginForm" autocomplete="off">
+      <label for="loginUser">User ID</label>
+      <input id="loginUser" type="text" placeholder="User ID" required>
+      <label for="loginPass">Password</label>
+      <input id="loginPass" type="password" placeholder="Password" required>
+      <button type="submit">LOGIN</button>
+      <div id="loginError">Invalid User ID or Password</div>
+    </form>
+  </div>
+</div>
+<script id="login-script">
+(function(){
+  const USER='JITHIN';
+  const PASS='8086';
+  const overlay=document.getElementById('loginOverlay');
+  const form=document.getElementById('loginForm');
+  const user=document.getElementById('loginUser');
+  const pass=document.getElementById('loginPass');
+  const error=document.getElementById('loginError');
+  document.body.classList.add('login-locked');
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    if(user.value.trim().toUpperCase()===USER && pass.value===PASS){
+      overlay.style.display='none';
+      document.body.classList.remove('login-locked');
+    }else{
+      error.style.display='block';
+      pass.value='';
+      pass.focus();
+    }
+  });
+  user.focus();
+})();
+</script>
 </body></html>
