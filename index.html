@@ -132,34 +132,12 @@ box-shadow:0 4px 16px #17352a18}
 .db-case-card p{margin:5px 0;line-height:1.45}
 .db-empty{color:#68766f;font-size:13px}
 @media(max-width:700px){.admin-grid{grid-template-columns:1fr}.admin-grid .full{grid-column:auto}.admin-case{align-items:flex-start;flex-direction:column}}
+</style>
 
-<style id="database-toggle-style">
-.database-toggle-wrap{max-width:1050px;margin:2px auto 12px;padding:0 16px;text-align:center}
-.database-toggle-btn{
-  width:100%;max-width:420px;display:inline-flex;align-items:center;justify-content:center;gap:9px;
-  padding:12px 18px;border:1px solid #c9d8cc;border-radius:11px;background:#fff;
-  color:#17352a;font-family:'Noto Sans Malayalam',Arial,sans-serif;font-size:14px;font-weight:900;
-  cursor:pointer;box-shadow:0 3px 12px rgba(23,53,42,.08)
-}
-.database-toggle-btn:hover{background:#f7fbf3;border-color:#8fba99}
-.database-toggle-btn .db-chevron{font-size:18px;line-height:1;transition:transform .2s}
-.database-toggle-btn.open .db-chevron{transform:rotate(180deg)}
-#databaseCasesSection{display:none;max-width:1050px;margin:0 auto 16px;padding:0 16px}
-#databaseCasesSection.open{display:block}
-#databaseCasesSection .db-case-box{background:#fff;border:1px solid #dbe4de;border-radius:14px;padding:16px;box-shadow:0 4px 16px rgba(23,53,42,.07)}
-#databaseCasesSection .db-case-grid{display:grid;gap:12px;margin-top:10px}
-#databaseCasesSection .db-case-card{border:1px solid #dfe8e2;border-radius:11px;padding:14px;background:#fff;font-family:'Noto Sans Malayalam',Arial,sans-serif;line-height:1.6}
-#databaseCasesSection .db-case-card h3{margin:0 0 7px;color:#17352a;font-size:17px}
-#databaseCasesSection .db-case-card p{margin:5px 0}
-@media(max-width:600px){.database-toggle-wrap,#databaseCasesSection{padding-left:10px;padding-right:10px}}
-</style>
-</style>
-<style id="malayalam-font-style">
-body,button,input,textarea,select,.year-section,.case-details,.cc-details,.cc-detail-view,
-table,th,td,pre,.witness-table,.cc-card,.cc-detail-card{
-  font-family:'Noto Sans Malayalam',Arial,Helvetica,sans-serif;
-}
-table{font-size:14px;line-height:1.6}
+<style id="final-malayalam-font">
+body, table, th, td, .year-section, .year-section * { font-family: "Noto Sans Malayalam", Arial, Helvetica, sans-serif !important; }
+.year-section table { width:100%; border-collapse:collapse; }
+.year-section th, .year-section td { line-height:1.65; }
 </style>
 </head>
 <body>
@@ -172,22 +150,6 @@ table{font-size:14px;line-height:1.6}
 </div>
 <nav class="year-nav" id="years"><a class="year-btn" href="#year-2014">2014</a><a class="year-btn" href="#year-2015">2015</a><a class="year-btn" href="#year-2016">2016</a><a class="year-btn" href="#year-2017">2017</a><a class="year-btn" href="#year-2018">2018</a><a class="year-btn" href="#year-2019">2019</a><a class="year-btn" href="#year-2020">2020</a><a class="year-btn" href="#year-2021">2021</a><a class="year-btn" href="#year-2022">2022</a><a class="year-btn" href="#year-2023">2023</a><a class="year-btn" href="#year-2024">2024</a><a class="year-btn" href="#year-2025">2025</a><a class="year-btn" href="#year-2026">2026</a></nav>
 <div class="accused-details-btn"><a href="#or-06-2026" id="accusedDetailsBtn">ACCUSED DETAILS</a></div>
-<div class="database-toggle-wrap">
-  <button id="databaseToggleBtn" class="database-toggle-btn" type="button" aria-expanded="false">
-    <span>🗂️</span><span>DATABASE CASE RECORDS</span><span class="db-chevron">⌄</span>
-  </button>
-</div>
-<section id="databaseCasesSection" class="db-case-section" aria-hidden="true">
-  <div class="db-case-box">
-    <div class="db-case-head">
-      <div>
-        <div class="case-tools-title">DATABASE CASE RECORDS</div>
-        <div class="admin-note">Database-ൽ ഉള്ള case records മാത്രം ഇവിടെ കാണിക്കും.</div>
-      </div>
-    </div>
-    <div id="databaseCases" class="db-case-grid"></div>
-  </div>
-</section>
 <div class="case-analysis-btn"><a href="#case-analysis" id="caseAnalysisBtn">CASE ANALYSIS</a></div><div class="accused-details-btn"><a href="#cc-details" id="ccDetailsBtn">CC CASE DETAILS</a></div>
 <section class="accused-details" id="or-01-2026-details">
 <div class="accused-head"><div><div class="brand">OR 1/2026</div><h2>OR 1/2026 — ACCUSED DETAILS</h2></div><a class="back" href="#or-06-2026">BACK</a></div>
@@ -620,7 +582,13 @@ window.addEventListener('hashchange',function(){if(location.hash==='#cc-details'
 
 <!-- Supabase database/admin UI -->
 
-<!-- Database Case Records section is placed beside the year/navigation controls above. -->
+<section id="databaseCasesSection" class="db-case-section" style="display:none">
+  <div class="db-case-box">
+    <div class="case-tools-title">🗂️ Database Case Records</div>
+    <div class="admin-note">Records added from the Admin panel.</div>
+    <div id="databaseCases" class="db-case-grid"></div>
+  </div>
+</section>
 
 <div id="adminModal" aria-hidden="true">
   <div id="adminPanel">
@@ -732,27 +700,9 @@ window.addEventListener('hashchange',function(){if(location.hash==='#cc-details'
     async function loadCases(){if(!client)return;const r=await client.from('cases').select('*').order('year',{ascending:false}).order('id',{ascending:false});if(r.error){msg(r.error.message,false);return;}renderPublic(r.data||[]);listBox.innerHTML='<h3 style="margin:0 0 8px">Saved database cases</h3>';if(!r.data||!r.data.length){listBox.innerHTML+='<div class="db-empty">No database cases yet.</div>';return;}r.data.forEach(row=>{const el=document.createElement('div');el.className='admin-case';const left=document.createElement('div');left.innerHTML='<strong>'+escapeHtml(row.case_number||'')+'</strong><small>'+escapeHtml(row.or_number||'')+' • '+escapeHtml(row.status||'')+'</small>';const actions=document.createElement('div');const edit=document.createElement('button');edit.className='admin-secondary';edit.textContent='Edit';edit.onclick=()=>fillForm(row);const del=document.createElement('button');del.className='admin-danger';del.textContent='Delete';del.onclick=()=>deleteCase(row.id);actions.append(edit,del);el.append(left,actions);listBox.appendChild(el);});}
     function fillForm(row){setField('adminEditId',row.id);setField('adminCaseNumber',row.case_number);setField('adminOrNumber',row.or_number);setField('adminYear',row.year);setField('adminStatusField',row.status);setField('adminAccused',row.accused_details);setField('adminDetails',row.case_details);setField('adminCC',row.cc_case_details);setField('adminPhotos',JSON.stringify(row.photos||[]));}
     async function deleteCase(id){if(!confirm('Delete this database case?'))return;const r=await client.from('cases').delete().eq('id',id);if(r.error){msg(r.error.message,false);return;}msg('Case deleted.',true);loadCases();}
-    function renderPublic(data){dbList.innerHTML='';if(!data.length){dbList.innerHTML='<div class="db-empty">Database-ൽ ഇപ്പോൾ case records ഇല്ല.</div>';return;}data.forEach(row=>{const card=document.createElement('article');card.className='db-case-card';const photos=Array.isArray(row.photos)?row.photos:[];card.innerHTML='<h3>'+escapeHtml(row.case_number||'')+'</h3><p><strong>OR:</strong> '+escapeHtml(row.or_number||'—')+'</p><p><strong>Year:</strong> '+escapeHtml(row.year||'—')+'</p><p><strong>Status:</strong> '+escapeHtml(row.status||'—')+'</p>'+(row.accused_details?'<p><strong>Accused:</strong> '+escapeHtml(row.accused_details)+'</p>':'')+(row.case_details?'<p><strong>Case Details:</strong> '+escapeHtml(row.case_details)+'</p>':'')+(row.cc_case_details?'<p><strong>CC:</strong> '+escapeHtml(row.cc_case_details)+'</p>':'')+(photos.length?'<div style="margin-top:8px">'+photos.map(u=>'<img src="'+escapeHtml(u)+'" alt="Case photo" style="max-width:100%;border-radius:8px;margin:4px 0">').join('')+'</div>':'');dbList.appendChild(card);});}
+    function renderPublic(data){if(!data.length){dbSection.style.display='none';return;}dbSection.style.display='block';dbList.innerHTML='';data.forEach(row=>{const card=document.createElement('article');card.className='db-case-card';const photos=Array.isArray(row.photos)?row.photos:[];card.innerHTML='<h3>'+escapeHtml(row.case_number||'')+'</h3><p><strong>OR:</strong> '+escapeHtml(row.or_number||'—')+'</p><p><strong>Year:</strong> '+escapeHtml(row.year||'—')+'</p><p><strong>Status:</strong> '+escapeHtml(row.status||'—')+'</p>'+(row.accused_details?'<p><strong>Accused:</strong> '+escapeHtml(row.accused_details)+'</p>':'')+(row.case_details?'<p><strong>Case Details:</strong> '+escapeHtml(row.case_details)+'</p>':'')+(row.cc_case_details?'<p><strong>CC:</strong> '+escapeHtml(row.cc_case_details)+'</p>':'')+(photos.length?'<div style="margin-top:8px">'+photos.map(u=>'<img src="'+escapeHtml(u)+'" alt="Case photo" style="max-width:100%;border-radius:8px;margin:4px 0">').join('')+'</div>':'');dbList.appendChild(card);});}
     function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-    
-const dbToggle=document.getElementById('databaseToggleBtn');
-if(dbToggle){
-  dbToggle.addEventListener('click', async function(){
-    const isOpen=dbSection.classList.toggle('open');
-    dbSection.setAttribute('aria-hidden',String(!isOpen));
-    dbToggle.setAttribute('aria-expanded',String(isOpen));
-    dbToggle.classList.toggle('open',isOpen);
-    if(isOpen && client){
-      dbList.innerHTML='<div class="db-empty">Loading case records…</div>';
-      const r=await client.from('cases').select('*').order('year',{ascending:false}).order('id',{ascending:false});
-      if(r.error){dbList.innerHTML='<div class="db-empty">Database records load ചെയ്യാൻ കഴിഞ്ഞില്ല.</div>';return;}
-      renderPublic(r.data||[]);
-      dbSection.scrollIntoView({behavior:'smooth',block:'nearest'});
-    }
-  });
-}
-
-if(client)client.auth.onAuthStateChange(()=>setTimeout(checkSession,0));
+    if(client)client.auth.onAuthStateChange(()=>setTimeout(checkSession,0));
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initAdmin);else initAdmin();
 })();
