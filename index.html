@@ -620,6 +620,7 @@ window.addEventListener('hashchange',function(){if(location.hash==='#cc-details'
       <div class="admin-actions">
         <button id="adminSaveBtn" class="admin-primary" type="button">💾 Save Case</button>
         <button id="adminNewBtn" class="admin-secondary" type="button">＋ New</button>
+        <button id="adminImportBtn" class="admin-secondary" type="button">⬇️ Import Old Cases</button>
         <button id="adminLogoutBtn" class="admin-secondary" type="button">Logout</button>
       </div>
       <div id="adminStatus"></div>
@@ -661,6 +662,29 @@ window.addEventListener('hashchange',function(){if(location.hash==='#cc-details'
     };
     document.getElementById('adminLogoutBtn').onclick=async function(){if(client)await client.auth.signOut();clearForm();checkSession();};
     document.getElementById('adminNewBtn').onclick=clearForm;
+    document.getElementById('adminImportBtn').onclick=async function(){
+      if(!client)return;
+      const u=(await client.auth.getUser()).data.user;
+      if(!u||u.id!==ADMIN_UID){msg('Admin access denied.',false);return;}
+      if(!confirm('Import the existing case list from this website into Supabase? Existing matching cases will be skipped.'))return;
+      const rows = [
+        ["6/2017","OR 03/14","Acquitted"],["173/17","OR 01/15","Convicted"],["52/2017","OR 02/15","Convicted – 3 years imprisonment + ₹10,000 fine"],["51/2017","OR 03/15","Running at JFCM II SBY"],["37/2017","OR 04/15","Discharged"],["338/2017","OR 01/16","Discharged u/s 245 CrPC"],["50/18","OR 02/16","Running Case"],["71/2019","OR 01/17","Acquitted"],["290/2018","OR 05/17","Acquitted"],["86/2019","OR 06/18","Acquitted"],["79/2019","OR 07/18","Running Case"],["59/2020","OR 02/18","Running Case"],["60/2020","OR 03/18","Running Case"],["355/2019","OR 02/19","Case Discharged"],["214/2019","OR 01/19","Dfo Compound"],["04/2021","OR 03/19","Dfo Compound"],["1/2022","OR 05/19","Running Case"],["97/2021","OR 03/20","Running Case"],["1109/2020","OR 07/20","Running Case"],["282/2022","OR 08/20","Running Case"],["146/2022","OR 09/20","Running Case"],["943/2020","OR 01/20","Case Compounded by DFO"],["481/2020","OR 02/20","Case Compounded"],["247/24","OR 06/21","Running Case"],["327/2025","OR 05/23","Running Case"],["458/2022","OR 11/2017","Pending"],["63/2022","OR 11/2017","Pending"]
+      ];
+      const existing=await client.from('cases').select('case_number,or_number');
+      if(existing.error){msg(existing.error.message,false);return;}
+      const seen=new Set((existing.data||[]).map(x=>(String(x.case_number||'').trim().toLowerCase()+'|'+String(x.or_number||'').trim().toLowerCase())));
+      const payload=rows.filter(r=>!seen.has(r[0].toLowerCase()+'|'+r[1].toLowerCase())).map(r=>({
+        case_number:r[0],or_number:r[1],
+        year:(r[0].match(/(20\\d{2})/)||[])[1] ? Number((r[0].match(/(20\\d{2})/)||[])[1]) : null,
+        status:r[2],accused_details:null,case_details:null,cc_case_details:null,photos:[]
+      }));
+      if(!payload.length){msg('All existing cases are already imported.',true);return;}
+      msg('Importing '+payload.length+' cases…',true);
+      const r=await client.from('cases').insert(payload);
+      if(r.error){msg(r.error.message,false);return;}
+      msg(payload.length+' old cases imported successfully. You can now Edit them from the list.',true);
+      loadCases();
+    };
     document.getElementById('adminSaveBtn').onclick=async function(){
       if(!client)return; const u=(await client.auth.getUser()).data.user; if(!u||u.id!==ADMIN_UID){msg('Admin access denied.',false);return;}
       const case_number=document.getElementById('adminCaseNumber').value.trim(); if(!case_number){msg('Case Number is required.',false);return;}
