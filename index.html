@@ -106,10 +106,40 @@ box-shadow:0 4px 16px #17352a18}
 #loginError{display:none;margin-top:12px;color:#b42318;font-size:12px;font-weight:800;text-align:center}
 
 </style>
+<style id="case-search-style">
+.case-tools{max-width:1050px;margin:12px auto 16px;padding:0 16px}
+.case-tools-box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 4px 16px #17352a0b}
+.case-tools-title{font-size:14px;font-weight:900;margin-bottom:9px}
+.case-search-row{display:flex;gap:8px}
+.case-search{flex:1;padding:12px 13px;border:1px solid var(--line);border-radius:9px;font-size:15px;outline:none;min-width:0}
+.case-search:focus{border-color:var(--green);box-shadow:0 0 0 3px #76c44222}
+.case-search-btn,.case-clear-btn{border:0;border-radius:9px;padding:11px 14px;font-weight:900;cursor:pointer}
+.case-search-btn{background:var(--deep);color:#fff}.case-clear-btn{background:#eef3ef;color:var(--deep)}
+.case-hint{font-size:11px;color:var(--muted);margin-top:8px}
+.case-results{display:none;margin-top:12px}.case-results.active{display:block}
+.case-result{display:block;text-decoration:none;color:var(--deep);background:#f7faf8;border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin-top:7px}
+.case-result:hover{border-color:var(--green);background:#f7fbf3}.case-result strong{display:block;font-size:14px}.case-result span{font-size:11px;color:var(--muted)}
+.case-no-results{padding:12px;background:#fff7f5;border:1px solid #efd3cd;border-radius:9px;color:#8a2d1c;font-weight:800;font-size:12px}
+.photo-tools{max-width:1050px;margin:0 auto 14px;padding:0 16px}.photo-tools a{display:block;text-align:center;text-decoration:none;background:#eef6ef;color:var(--deep);border:1px solid #cfe0d2;border-radius:10px;padding:11px;font-weight:900}
+@media(max-width:600px){.case-tools{padding:0 10px}.case-search-row{flex-wrap:wrap}.case-search{flex-basis:100%}.case-search-btn,.case-clear-btn{flex:1}.photo-tools{padding:0 10px}}
+</style>
 </head>
 <body>
 
 <header class="hero" id="top"><div class="hero-in"><div class="brand">CASE DETAILS</div><h1>IRULAM FOREST STATION</h1><div class="sub">2014–2026 • Year-wise case record</div></div></header>
+<section class="case-tools" aria-label="Case search">
+<div class="case-tools-box">
+<div class="case-tools-title">🔎 Search Case Number</div>
+<div class="case-search-row">
+<input id="caseSearch" class="case-search" type="search" placeholder="Example: 79/2019, OR 07/18" autocomplete="off" />
+<button class="case-search-btn" id="caseSearchBtn" type="button">SEARCH</button>
+<button class="case-clear-btn" id="caseClearBtn" type="button">CLEAR</button>
+</div>
+<div class="case-hint">Case number, OR number, year, or status ഉപയോഗിച്ച് search ചെയ്യാം.</div>
+<div class="case-results" id="caseResults"></div>
+</div>
+</section>
+<section class="photo-tools"><a href="#photo-gallery" id="photoGalleryBtn">📷 PHOTOS / CASE RECORDS</a></section>
 <nav class="year-nav" id="years"><a class="year-btn" href="#year-2014">2014</a><a class="year-btn" href="#year-2015">2015</a><a class="year-btn" href="#year-2016">2016</a><a class="year-btn" href="#year-2017">2017</a><a class="year-btn" href="#year-2018">2018</a><a class="year-btn" href="#year-2019">2019</a><a class="year-btn" href="#year-2020">2020</a><a class="year-btn" href="#year-2021">2021</a><a class="year-btn" href="#year-2022">2022</a><a class="year-btn" href="#year-2023">2023</a><a class="year-btn" href="#year-2024">2024</a><a class="year-btn" href="#year-2025">2025</a><a class="year-btn" href="#year-2026">2026</a></nav>
 <div class="accused-details-btn"><a href="#or-06-2026" id="accusedDetailsBtn">ACCUSED DETAILS</a></div>
 <div class="case-analysis-btn"><a href="#case-analysis" id="caseAnalysisBtn">CASE ANALYSIS</a></div><div class="accused-details-btn"><a href="#cc-details" id="ccDetailsBtn">CC CASE DETAILS</a></div>
@@ -510,4 +540,36 @@ window.addEventListener('hashchange',function(){if(location.hash==='#cc-details'
 </div></section>
 
 
+<section id="photo-gallery" class="case-tools" style="display:none"></section>
+<script id="case-search-script">
+(function(){
+  const rows = [
+    ["6/2017","OR 03/14","Acquitted"],["173/17","OR 01/15","Convicted"],["52/2017","OR 02/15","Convicted – 3 years imprisonment + ₹10,000 fine"],["51/2017","OR 03/15","Running at JFCM II SBY"],["37/2017","OR 04/15","Discharged"],["338/2017","OR 01/16","Discharged u/s 245 CrPC"],["50/18","OR 02/16","Running Case"],["71/2019","OR 01/17","Acquitted"],["290/2018","OR 05/17","Acquitted"],["86/2019","OR 06/18","Acquitted"],["79/2019","OR 07/18","Running Case"],["59/2020","OR 02/18","Running Case"],["60/2020","OR 03/18","Running Case"],["355/2019","OR 02/19","Case Discharged"],["214/2019","OR 01/19","Dfo Compound"],["04/2021","OR 03/19","Dfo Compound"],["1/2022","OR 05/19","Running Case"],["97/2021","OR 03/20","Running Case"],["1109/2020","OR 07/20","Running Case"],["282/2022","OR 08/20","Running Case"],["146/2022","OR 09/20","Running Case"],["943/2020","OR 01/20","Case Compounded by DFO"],["481/2020","OR 02/20","Case Compounded"],["247/24","OR 06/21","Running Case"],["327/2025","OR 05/23","Running Case"],["458/2022","OR 11/2017","Pending"],["63/2022","OR 11/2017","Pending"]
+  ];
+  const search=document.getElementById('caseSearch'), results=document.getElementById('caseResults');
+  const norm=v=>String(v||'').toLowerCase().replace(/\s+/g,'').replace(/-/g,'/');
+  function run(){
+    const q=norm(search.value); results.classList.add('active');
+    if(!q){results.innerHTML='<div class="case-hint">Search box-ൽ case number നൽകുക.</div>';return;}
+    const hits=rows.filter(r=>r.some(x=>norm(x).includes(q)));
+    if(!hits.length){results.innerHTML='<div class="case-no-results">No matching case found.</div>';return;}
+    results.innerHTML=hits.map(r=>'<a class="case-result" href="#case-analysis"><strong>'+r[0]+'  •  '+r[1]+'</strong><span>'+r[2]+'</span></a>').join('');
+  }
+  document.getElementById('caseSearchBtn').addEventListener('click',run);
+  document.getElementById('caseClearBtn').addEventListener('click',()=>{search.value='';results.classList.remove('active');results.innerHTML='';search.focus();});
+  search.addEventListener('keydown',e=>{if(e.key==='Enter')run();});
+  search.addEventListener('input',()=>{if(!search.value.trim()){results.classList.remove('active');results.innerHTML='';}});
+  document.getElementById('photoGalleryBtn').addEventListener('click',function(e){
+    e.preventDefault();
+    const years=document.querySelectorAll('.year-section');
+    const gallery=document.getElementById('photo-gallery');
+    const imgs=[...document.querySelectorAll('.year-section img')].filter(img=>img.src);
+    gallery.style.display='block';
+    gallery.innerHTML='<div class="case-tools-box"><div class="case-tools-title">📷 Photos / Case Records</div><div class="case-hint">Year-wise case record photos</div></div>';
+    const box=document.createElement('div');box.className='case-results active';box.style.display='grid';box.style.gridTemplateColumns='repeat(auto-fit,minmax(220px,1fr))';box.style.gap='10px';
+    imgs.forEach((img,i)=>{const card=document.createElement('div');card.className='pdf-card';card.style.margin='0';const clone=img.cloneNode();clone.style.width='100%';clone.style.height='auto';clone.alt=img.alt||('Case record photo '+(i+1));card.appendChild(clone);box.appendChild(card);});
+    gallery.appendChild(box); gallery.scrollIntoView({behavior:'smooth'});
+  });
+})();
+</script>
 </body></html>
