@@ -109,12 +109,6 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 <input type="hidden" id="damagedCropsHidden" name="damaged_crops">
 </div>
 
-<label for="damaged_crop_count">11. ആകെ നാശം സംഭവിച്ച വിളകളുടെ എണ്ണം</label>
-<input id="damaged_crop_count" name="damaged_crop_count" type="number" min="0" step="1" inputmode="numeric" placeholder="ആകെ എണ്ണം">
-
-<label for="damaged_crop_count">11. നാശം സംഭവിച്ച വിളകളുടെ എണ്ണം</label>
-<input id="damaged_crop_count" name="damaged_crop_count" type="number" min="0" step="1" inputmode="numeric" placeholder="എണ്ണം">
-
 <label for="damage_details">12. കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ</label>
 <textarea id="damage_details" name="damage_details"></textarea>
 
@@ -182,7 +176,6 @@ document.addEventListener("DOMContentLoaded", function(){
     const additional=extra&&extra.value.trim()? ["Additional: "+extra.value.trim()] : [];
     hidden.value=crops.map(x=>x.crop+" – "+x.stage+" – "+x.count+" എണ്ണം").concat(additional).join(", ");
     const total=crops.reduce((s,x)=>s+Number(x.count||0),0);
-    const totalEl=document.getElementById("damaged_crop_count"); if(totalEl) totalEl.value=total||"";
   }
   add.addEventListener("click",function(){
     const c=select.value,s=stage.value,n=count.value.trim();
