@@ -88,9 +88,6 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 
 <label>സാക്ഷികളുടെ പേര്</label><input id="witness_names" type="text">
 <label>സാക്ഷികളുടെ മൊബൈൽ നമ്പർ</label><input id="witness_numbers" type="tel">
-<label>അപേക്ഷകന്റെ ബാങ്കിന്റെ പേര്</label><input id="bank_name" type="text">
-<label>ബാങ്ക് അക്കൗണ്ട് നമ്പർ</label><input id="account_number" type="text">
-<label>IFSC Code</label><input id="ifsc_code" type="text">
 <label>പരിശോധന നടത്തിയ ഉദ്യോഗസ്ഥന്റെ പേര്</label><input id="officer_name" type="text">
 <label>സ്ഥലത്തിന്റെ ഏകദേശം വിസ്തീർണ്ണം</label><input id="area" type="text" placeholder="ഉദാ: 0.50 ഏക്കർ">
 <label>ഏകദേശ നഷ്ടപരിഹാര തുക</label><input id="compensation_amount" type="number" min="0" step="0.01" placeholder="₹">
@@ -100,266 +97,87 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 </form>
 </div>
 
-<div class="card" id="savedDataCard">
-<h2>💾 Saved Data</h2>
-<div id="savedDataList">
-  <p class="small">ഇവിടെ save ചെയ്ത അപേക്ഷകൾ കാണിക്കും.</p>
-</div>
-</div>
-
-<div class="card">
-<h2>🔎 അപേക്ഷ തിരയുക</h2>
-<div class="search-row">
-<div><label>അപേക്ഷ നമ്പർ</label><input id="searchNo" type="text" placeholder="Application No."></div>
-<div><label>അപേക്ഷകന്റെ പേര്</label><input id="searchName" type="text" placeholder="പേര്"></div>
-</div>
-<button class="primary" type="button" id="searchBtn">SEARCH</button>
-<div id="results"></div>
-</div>
-
-<div class="card hidden" id="detailsCard">
-<h2>📋 Administration Details</h2>
-<div id="details" class="details"></div>
-
-<div class="admin-box">
-  <h3>💬 Comment / Remarks</h3>
-  <textarea id="adminRemarks" placeholder="ഇവിടെ Comment / Remarks എഴുതുക..."></textarea>
-  <button class="primary" type="button" id="saveRemarksBtn">💾 SAVE COMMENT</button>
-  <div id="remarksStatus" class="small" style="margin-top:8px"></div>
-</div>
-
-<button class="secondary" type="button" id="backBtn" style="margin-top:14px">← Search-ലേക്ക് മടങ്ങുക</button>
-</div>
 </main>
 
 <script>
-const KEY="compensation_cases_v1";
+const SUPABASE_URL = "https://jrccmucxwgebdurcokix.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_-IbSEjr2Nn_TpO-jRAujUQ_q-kugYET";
 
-function getCases(){return JSON.parse(localStorage.getItem(KEY)||"[]")}
-function saveCases(cases){localStorage.setItem(KEY,JSON.stringify(cases))}
+const form = document.getElementById("compensationForm");
+const statusBox = document.getElementById("status");
 
-function val(id){return document.getElementById(id).value.trim()}
+function val(id){
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : "";
+}
 
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  statusBox.textContent = "Saving...";
 
-async function loadSavedData(){
- const list=document.getElementById("savedDataList");
- try{
-  const response=await fetch(SUPABASE_URL+"/rest/v1/compensation_cases?select=*&order=created_at.desc",{
-   headers:{
-    "apikey":SUPABASE_ANON_KEY,
-    "Authorization":"Bearer "+SUPABASE_ANON_KEY
-   }
-  });
-  if(!response.ok) throw new Error(await response.text());
-  const rows=await response.json();
+  const data = {
+    application_no: val("application_no"),
+    applicant_name: val("applicant_name"),
+    applicant_address: val("applicant_address"),
+    age: val("age") ? Number(val("age")) : null,
+    mobile: val("mobile"),
+    damage_location: val("damage_location"),
+    wild_animal: val("wild_animal"),
+    damaged_crops: val("damaged_crops"),
+    damage_details: val("damage_details"),
+    latitude: val("latitude"),
+    longitude: val("longitude"),
+    photo_name: val("photo"),
+    witness_names: val("witness_names"),
+    witness_numbers: val("witness_numbers"),
+    officer_name: val("officer_name"),
+    area: val("area"),
+    compensation_amount: val("compensation_amount") ? Number(val("compensation_amount")) : null
+  };
 
-  if(!rows.length){
-   list.innerHTML='<p class="small">ഇതുവരെ ഒരു അപേക്ഷയും save ചെയ്തിട്ടില്ല.</p>';
-   return;
+  try {
+    const response = await fetch(SUPABASE_URL + "/rest/v1/compensation_cases", {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(err || "Save failed");
+    }
+
+    statusBox.textContent = "✅ Saved successfully!";
+    form.reset();
+  } catch (error) {
+    console.error(error);
+    statusBox.textContent = "❌ Save failed. Please try again.";
   }
-
-  list.innerHTML="";
-  rows.forEach(x=>{
-   const div=document.createElement("div");
-   div.className="saved-item";
-   div.innerHTML=`
-    <div class="title">${escapeHtml(x.application_no||"-")}</div>
-    <div>${escapeHtml(x.applicant_name||"-")}</div>
-    <div class="small">${escapeHtml(x.wild_animal||"-")} • ${escapeHtml(x.damaged_crops||"-")}</div>
-    <div class="saved-actions">
-      <button type="button" class="secondary viewSaved">👁 View</button>
-      <button type="button" class="secondary editSaved">✏️ Edit</button>
-    </div>`;
-   div.querySelector(".viewSaved").onclick=()=>showDetails(x);
-   div.querySelector(".editSaved").onclick=()=>editCase(x);
-   list.appendChild(div);
-  });
- }catch(err){
-  list.innerHTML='<p class="small">Saved data load ചെയ്യാൻ കഴിഞ്ഞില്ല. Supabase table/RLS പരിശോധിക്കുക.</p>';
-  console.error(err);
- }
-}
-
-function editCase(x){
- const fields=[
-  "application_no","applicant_name","applicant_address","age","mobile",
-  "damage_location","wild_animal","damaged_crops","damage_details",
-  "latitude","longitude","witness_names","witness_numbers","bank_name",
-  "account_number","ifsc_code","officer_name","area","compensation_amount","admin_remarks"
- ];
- fields.forEach(id=>{
-  const el=document.getElementById(id);
-  if(el) el.value=x[id] ?? "";
- });
- document.getElementById("savedDataCard").scrollIntoView({behavior:"smooth"});
- document.getElementById("compensationForm").dataset.editId=x.id;
- const btn=document.querySelector('#compensationForm button[type="submit"]');
- btn.textContent="✏️ UPDATE";
-}
-
-document.getElementById("gpsBtn").addEventListener("click",()=>{
- if(!navigator.geolocation){alert("ഈ browser GPS support ചെയ്യുന്നില്ല.");return}
- navigator.geolocation.getCurrentPosition(pos=>{
-  document.getElementById("latitude").value=pos.coords.latitude.toFixed(6);
-  document.getElementById("longitude").value=pos.coords.longitude.toFixed(6);
- },()=>alert("GPS ലഭിച്ചില്ല. Location permission അനുവദിക്കുക."));
 });
 
-document.getElementById("compensationForm").addEventListener("submit",async e=>{
- e.preventDefault();
- const status=document.getElementById("status");
- status.style.display="block";
-
- const no=val("application_no");
- const editId=e.target.dataset.editId||"";
- const photo=document.getElementById("photo").files[0];
-
- const data={
-  application_no:no,
-  applicant_name:val("applicant_name"),
-  applicant_address:val("applicant_address"),
-  age:val("age")||null,
-  mobile:val("mobile"),
-  damage_location:val("damage_location"),
-  wild_animal:val("wild_animal"),
-  damaged_crops:val("damaged_crops"),
-  damage_details:val("damage_details"),
-  latitude:val("latitude")||null,
-  longitude:val("longitude")||null,
-  photo_name:photo?photo.name:"",
-  witness_names:val("witness_names"),
-  witness_numbers:val("witness_numbers"),
-  bank_name:val("bank_name"),
-  account_number:val("account_number"),
-  ifsc_code:val("ifsc_code"),
-  officer_name:val("officer_name"),
-  area:val("area"),
-  compensation_amount:val("compensation_amount")||null,
-  admin_remarks:val("adminRemarks")||null
- };
-
- try{
-  let url=SUPABASE_URL+"/rest/v1/compensation_cases";
-  let method="POST";
-  if(editId){
-   url += "?id=eq."+encodeURIComponent(editId);
-   method="PATCH";
+document.getElementById("gpsBtn")?.addEventListener("click", () => {
+  const status = document.getElementById("gpsStatus");
+  if (!navigator.geolocation) {
+    status.textContent = "GPS not supported.";
+    return;
   }
-  const response=await fetch(url,{
-   method,
-   headers:{
-    "Content-Type":"application/json",
-    "apikey":SUPABASE_ANON_KEY,
-    "Authorization":"Bearer "+SUPABASE_ANON_KEY,
-    "Prefer":"return=representation"
-   },
-   body:JSON.stringify(data)
-  });
-  const text=await response.text();
-  if(!response.ok) throw new Error(text||"Save failed");
-
-  status.className="success";
-  status.innerHTML=editId
-   ? `<b>Updated successfully!</b><br>Application No.: ${escapeHtml(no)}`
-   : `<b>Saved successfully!</b><br>Application No.: ${escapeHtml(no)}`;
-
-  delete e.target.dataset.editId;
-  e.target.reset();
-  document.getElementById("latitude").value="";
-  document.getElementById("longitude").value="";
-  document.getElementById("adminRemarks").value="";
-  document.querySelector('#compensationForm button[type="submit"]').textContent="💾 SAVE";
-
-  await loadSavedData();
-  document.getElementById("savedDataCard").scrollIntoView({behavior:"smooth"});
- }catch(err){
-  status.className="error";
-  let msg=String(err.message||err);
-  if(msg.includes("duplicate key")||msg.includes("compensation_cases_application_no_key"))
-    msg="ഈ അപേക്ഷ നമ്പർ ഇതിനകം save ചെയ്തിട്ടുണ്ട്. വേറെ Application No. നൽകുക.";
-  else if(msg.includes("relation")&&msg.includes("does not exist"))
-    msg="Supabase-ൽ compensation_cases table ഇല്ല. SQL setup വീണ്ടും Run ചെയ്യണം.";
-  else if(msg.includes("row-level security")||msg.includes("RLS"))
-    msg="Supabase RLS policy പ്രശ്നമാണ്. SQL setup വീണ്ടും Run ചെയ്യണം.";
-  else msg="Save ചെയ്യാൻ കഴിഞ്ഞില്ല: "+msg;
-  status.innerText=msg;
-  console.error(err);
+  status.textContent = "Getting location...";
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      document.getElementById("latitude").value = pos.coords.latitude.toFixed(6);
+      document.getElementById("longitude").value = pos.coords.longitude.toFixed(6);
+      status.textContent = "✅ GPS captured.";
+    },
+    () => {
+      status.textContent = "❌ GPS permission/location unavailable.";
+    }
+  );
 });
-document.getElementById("searchBtn").addEventListener("click",async()=>{
- const no=val("searchNo"), name=val("searchName");
- const results=document.getElementById("results");
- results.innerHTML="";
- if(!no&&!name){results.innerHTML='<p class="small">അപേക്ഷ നമ്പറോ പേരോ നൽകുക.</p>';return}
-
- let params=[];
- if(no) params.push("application_no=ilike.*"+encodeURIComponent(no)+"*");
- if(name) params.push("applicant_name=ilike.*"+encodeURIComponent(name)+"*");
-
- try{
-  const response=await fetch(SUPABASE_URL+"/rest/v1/compensation_cases?select=*&"+params.join("&")+"&order=created_at.desc",{
-   headers:{
-    "apikey":SUPABASE_ANON_KEY,
-    "Authorization":"Bearer "+SUPABASE_ANON_KEY
-   }
-  });
-  if(!response.ok) throw new Error(await response.text());
-  const found=await response.json();
-  if(!found.length){results.innerHTML='<p class="small">അപേക്ഷ കണ്ടെത്തിയില്ല.</p>';return}
-
-  found.forEach(x=>{
-   const div=document.createElement("div");div.className="result";
-   div.innerHTML=`<b>${escapeHtml(x.application_no)}</b> — ${escapeHtml(x.applicant_name)}`;
-   div.onclick=()=>showDetails(x);
-   results.appendChild(div);
-  });
- }catch(err){
-  results.innerHTML='<p class="small">Search ചെയ്യാൻ കഴിഞ്ഞില്ല. Supabase table/RLS setup പരിശോധിക്കുക.</p>';
-  console.error(err);
- }
-});
-function showDetails(x){
- if(!x)return;
- const fields=[
- ["അപേക്ഷ നമ്പർ",x.application_no],["അപേക്ഷകന്റെ പേര്",x.applicant_name],
- ["അപേക്ഷകന്റെ വിലാസം",x.applicant_address],["വയസ്",x.age],["മൊബൈൽ നമ്പർ",x.mobile],
- ["കൃഷിനാശം സംഭവിച്ച സ്ഥലം",x.damage_location],["കൃഷിനാശം വരുത്തിയ വന്യമൃഗത്തിന്റെ പേര്",x.wild_animal],
- ["കൃഷിനാശം സംഭവിച്ച വിളകളുടെ പേര്",x.damaged_crops],["കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ",x.damage_details],
- ["GPS",x.latitude&&x.longitude?x.latitude+", "+x.longitude:""],
- ["ഫോട്ടോ",x.photo_name],["സാക്ഷികളുടെ പേര്",x.witness_names],
- ["സാക്ഷികളുടെ മൊബൈൽ നമ്പർ",x.witness_numbers],["ബാങ്കിന്റെ പേര്",x.bank_name],
- ["ബാങ്ക് അക്കൗണ്ട് നമ്പർ",x.account_number],["IFSC Code",x.ifsc_code],
- ["പരിശോധന നടത്തിയ ഉദ്യോഗസ്ഥന്റെ പേര്",x.officer_name],["സ്ഥലത്തിന്റെ ഏകദേശം വിസ്തീർണ്ണം",x.area],
- ["ഏകദേശ നഷ്ടപരിഹാര തുക",x.compensation_amount]
- ];
- document.getElementById("details").innerHTML=fields.map(f=>
-  `<div class="detail-line"><strong>${escapeHtml(f[0])}</strong>${escapeHtml(f[1]||"-")}</div>`).join("");
- document.getElementById("adminRemarks").value=x.admin_remarks||"";
- document.getElementById("saveRemarksBtn").dataset.caseId=x.id||"";
- document.getElementById("remarksStatus").textContent="";
- document.getElementById("detailsCard").classList.remove("hidden");
- document.getElementById("detailsCard").scrollIntoView({behavior:"smooth"});
-}
-document.getElementById("saveRemarksBtn").onclick=async()=>{
- const id=document.getElementById("saveRemarksBtn").dataset.caseId;
- const remarks=document.getElementById("adminRemarks").value.trim();
- const out=document.getElementById("remarksStatus");
- if(!id){out.textContent="Application തിരഞ്ഞെടുക്കുക.";return}
- try{
-  const response=await fetch(SUPABASE_URL+"/rest/v1/compensation_cases?id=eq."+encodeURIComponent(id),{
-   method:"PATCH",headers:{"Content-Type":"application/json","apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+SUPABASE_ANON_KEY,"Prefer":"return=minimal"},
-   body:JSON.stringify({admin_remarks:remarks})
-  });
-  if(!response.ok) throw new Error(await response.text());
-  out.textContent="Comment / Remarks saved successfully.";
-  await loadSavedData();
- }catch(err){out.textContent="Comment save ചെയ്യാൻ കഴിഞ്ഞില്ല. Supabase UPDATE policy പരിശോധിക്കുക.";console.error(err)}
-};
-
-document.getElementById("backBtn").onclick=()=>document.getElementById("detailsCard").classList.add("hidden");
-
-loadSavedData();
-
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 </script>
 </body>
 </html>
