@@ -1,3 +1,137 @@
+
+<script id="edit-delete-actions">
+(function(){
+  function getCaseFromElement(el){
+    var node=el.closest('[data-id],[data-case-id],[data-case]');
+    if(!node) return null;
+    return node.getAttribute('data-id') || node.getAttribute('data-case-id') || node.getAttribute('data-case');
+  }
+
+  function addToolbar(root){
+    if(!root || root.querySelector('.ed-toolbar')) return;
+    var id=getCaseFromElement(root);
+    if(!id) return;
+
+    var bar=document.createElement('div');
+    bar.className='ed-toolbar';
+    bar.innerHTML='<button type="button" class="ed-btn ed-edit">✏️ Edit</button>'+
+                 '<button type="button" class="ed-btn ed-delete">🗑️ Delete</button>';
+
+    bar.querySelector('.ed-edit').onclick=function(){
+      if(!document.body.classList.contains('admin-authenticated')){
+        alert('Please login first.');
+        return;
+      }
+      // Use the existing edit handler if the page already provides one.
+      var fn=window.editCase || window.editApplication || window.openEdit;
+      if(typeof fn==='function'){ fn(id); return; }
+      // Fallback: open the item so existing detail controls can be used.
+      root.click();
+    };
+
+    bar.querySelector('.ed-delete').onclick=async function(){
+      if(!document.body.classList.contains('admin-authenticated')){
+        alert('Please login first.');
+        return;
+      }
+      if(!confirm('ഈ അപേക്ഷ delete ചെയ്യണോ? ഇത് തിരിച്ചെടുക്കാൻ കഴിയില്ല.')) return;
+      try{
+        if(typeof db==='undefined') throw new Error('Database connection not found.');
+        var r=await db.from('compensation_cases').delete().eq('id',id);
+        if(r.error) throw r.error;
+        alert('✅ Application deleted.');
+        root.remove();
+      }catch(e){
+        alert('❌ Delete failed: '+(e.message||e));
+      }
+    };
+    root.appendChild(bar);
+  }
+
+  function scan(){
+    if(!document.body.classList.contains('admin-authenticated')) return;
+    document.querySelectorAll('[data-id],[data-case-id],[data-case]').forEach(addToolbar);
+  }
+  var obs=new MutationObserver(scan);
+  document.addEventListener('DOMContentLoaded',function(){
+    scan();
+    obs.observe(document.body,{childList:true,subtree:true});
+  });
+})();
+</script>
+
+<script id="verification-report-button">
+document.addEventListener("DOMContentLoaded", function(){
+  function setup(){
+    if (!document.body.classList.contains("admin-authenticated")) return;
+    if (document.getElementById("verificationReportBtn")) return;
+
+    var candidates = Array.from(document.querySelectorAll("button,a"));
+    var target = candidates.find(function(el){
+      return /verification report|saved data|saved/i.test((el.textContent||"").trim());
+    });
+
+    var btn = document.createElement("button");
+    btn.id = "verificationReportBtn";
+    btn.type = "button";
+    btn.textContent = "📋 Verification Report";
+
+    var panel = document.createElement("div");
+    panel.id = "verificationReportPanel";
+
+    if (target) {
+      target.style.display = "none";
+      target.parentNode.insertBefore(btn, target.nextSibling);
+      btn.addEventListener("click", function(){
+        panel.style.display = panel.style.display === "block" ? "none" : "block";
+        // Trigger the original Saved Data action so existing data/detail logic is preserved.
+        target.click();
+      });
+      target.parentNode.insertBefore(panel, btn.nextSibling);
+    } else {
+      var main = document.querySelector("main") || document.body;
+      main.insertBefore(btn, main.firstChild);
+      btn.addEventListener("click", function(){ panel.style.display="block"; });
+      main.insertBefore(panel, btn.nextSibling);
+    }
+  }
+  var n=0, t=setInterval(function(){
+    setup(); n++; if(n>50) clearInterval(t);
+  },100);
+});
+</script>
+
+<script id="strict-auth-check">
+(function () {
+  function hideUntilLoggedIn() {
+    document.body.classList.remove('admin-authenticated');
+  }
+  hideUntilLoggedIn();
+
+  var tries = 0;
+  var timer = setInterval(function () {
+    tries++;
+    if (typeof db !== 'undefined' && db.auth) {
+      clearInterval(timer);
+      db.auth.getSession().then(function (r) {
+        var session = r && r.data && r.data.session;
+        document.body.classList.toggle('admin-authenticated', !!session);
+        if (!session) {
+          var selectors = ['#adminApp','#dashboard','#savedData','.admin-content','.dashboard','.case-list','.applications'];
+          selectors.forEach(function(s){
+            document.querySelectorAll(s).forEach(function(el){ el.innerHTML=''; });
+          });
+        }
+      });
+      db.auth.onAuthStateChange(function (_event, session) {
+        document.body.classList.toggle('admin-authenticated', !!session);
+        if (!session) location.reload();
+      });
+    }
+    if (tries > 50) clearInterval(timer);
+  }, 100);
+})();
+</script>
 <!doctype html>
 <html lang="en">
 <head>
@@ -120,6 +254,37 @@ img{
   .case-item,.application-item{padding:13px !important}
 }
 </style>
+
+<style id="login-gate-style">
+body:not(.admin-authenticated) #adminApp,
+body:not(.admin-authenticated) #dashboard,
+body:not(.admin-authenticated) #savedData,
+body:not(.admin-authenticated) .admin-content,
+body:not(.admin-authenticated) .dashboard,
+body:not(.admin-authenticated) .case-list,
+body:not(.admin-authenticated) .applications { display:none !important; }
+</style>
+
+<style id="verification-report-ui">
+#verificationReportPanel{display:none}
+#verificationReportBtn{
+  width:100%;max-width:520px;margin:14px auto;padding:14px 18px;
+  border:0;border-radius:14px;background:linear-gradient(135deg,#155eef,#0b3b91);
+  color:#fff;font-size:16px;font-weight:800;box-shadow:0 8px 22px rgba(21,94,239,.22);
+}
+body.admin-authenticated #verificationReportBtn{display:block}
+body:not(.admin-authenticated) #verificationReportBtn{display:none!important}
+</style>
+
+<style id="edit-delete-ui">
+.ed-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+.ed-btn{border:0!important;border-radius:12px!important;padding:11px 16px!important;
+font-weight:800!important;cursor:pointer!important}
+.ed-edit{background:#eaf2ff!important;color:#155eef!important}
+.ed-delete{background:#fff0ef!important;color:#d92d20!important}
+.ed-btn:active{transform:scale(.98)}
+@media(max-width:600px){.ed-btn{flex:1;min-width:120px;min-height:44px}}
+</style>
 </head>
 <body>
 <h1>Compensation — Admin</h1>
@@ -138,7 +303,7 @@ img{
   </div>
 
   <div class="card">
-    <h2>Saved Data</h2>
+    <h2>Verification Report</h2>
     <div id="list">Loading...</div>
   </div>
 
