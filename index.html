@@ -63,6 +63,8 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 <div>
 <label for="age">4. വയസ്സ്</label>
 <input id="age" name="age" type="number" min="0" max="120" inputmode="numeric">
+<label for="inspection_date">സ്ഥലം പരിശോധിച്ച തീയതി</label>
+<input id="inspection_date" name="inspection_date" type="date">
 </div>
 <div>
 <label for="mobile">5. മൊബൈൽ നമ്പർ</label>
@@ -333,6 +335,7 @@ form.addEventListener("submit", async (e)=>{
     applicant_name:val("applicant_name"),
     applicant_address:val("applicant_address"),
     age:val("age") ? Number(val("age")) : null,
+    inspection_date:val("inspection_date"),
     mobile:val("mobile"),
     damage_location:val("damage_location"),
     wild_animal:val("wild_animal"),
