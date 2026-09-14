@@ -79,24 +79,49 @@ function cropHTML(v){
 }
 
 async function hardLoginGate(){
- // IMPORTANT: Supabase normally remembers the previous login.
- // Force a fresh login whenever admin.html is opened.
- try{await db.auth.signOut({scope:"local"});}catch(e){}
- show("loginCard",true);show("app",false);show("reportCard",false);show("detailCard",false);show("editCard",false);
- initialized=true;
+  // Always start this page logged out, but do not react to the sign-out
+  // event until the gate has finished initializing.
+  try { await db.auth.signOut({scope:"local"}); } catch(e) {}
+  show("loginCard",true);
+  show("app",false);
+  show("reportCard",false);
+  show("detailCard",false);
+  show("editCard",false);
+  initialized=true;
 }
 async function login(){
- message("loginMsg","Login ചെയ്യുന്നു...",true);
- const {data,error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
- if(error){message("loginMsg",error.message);return}
- show("loginCard",false);show("app",true);message("loginMsg","");
+  const email=$("email").value.trim();
+  const password=$("password").value;
+  if(!email || !password){message("loginMsg","Email, password രണ്ടും നൽകുക.");return}
+  $("loginBtn").disabled=true;
+  message("loginMsg","Login ചെയ്യുന്നു...",true);
+  try{
+    const result=await db.auth.signInWithPassword({email,password});
+    if(result.error){
+      message("loginMsg","Login failed: "+result.error.message);
+      return;
+    }
+    if(!result.data || !result.data.session){
+      message("loginMsg","Login session ലഭിച്ചില്ല. Email/password പരിശോധിക്കുക.");
+      return;
+    }
+    show("loginCard",false);
+    show("app",true);
+    message("loginMsg","");
+  }catch(e){
+    message("loginMsg","Login failed: "+(e.message||e));
+  }finally{
+    $("loginBtn").disabled=false;
+  }
 }
 $("loginBtn").onclick=login;
 $("password").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
 
 db.auth.onAuthStateChange((_event,session)=>{
  if(!initialized)return;
- if(!session){show("loginCard",true);show("app",false);show("reportCard",false);show("detailCard",false);show("editCard",false);}
+ if(!session){
+   show("loginCard",true);show("app",false);show("reportCard",false);show("detailCard",false);show("editCard",false);
+ }
 });
 
 $("logoutBtn").onclick=async()=>{await db.auth.signOut({scope:"local"});};
