@@ -79,14 +79,15 @@ function cropHTML(v){
 }
 
 async function hardLoginGate(){
-  // Always start this page logged out, but do not react to the sign-out
-  // event until the gate has finished initializing.
-  try { await db.auth.signOut({scope:"local"}); } catch(e) {}
+  // Start every fresh page visit at the login screen.
+  // Clear only the local Supabase session; do not block the login flow.
+  initialized=false;
   show("loginCard",true);
   show("app",false);
   show("reportCard",false);
   show("detailCard",false);
   show("editCard",false);
+  try { await db.auth.signOut({scope:"local"}); } catch(e) {}
   initialized=true;
 }
 async function login(){
@@ -98,11 +99,21 @@ async function login(){
   try{
     const result=await db.auth.signInWithPassword({email,password});
     if(result.error){
-      message("loginMsg","Login failed: "+result.error.message);
+      message("loginMsg","❌ Login failed: "+result.error.message);
       return;
     }
-    if(!result.data || !result.data.session){
-      message("loginMsg","Login session ലഭിച്ചില്ല. Email/password പരിശോധിക്കുക.");
+    const session = result.data && result.data.session;
+    if(!session){
+      message("loginMsg","❌ Login session ലഭിച്ചില്ല. Email/password പരിശോധിക്കുക.");
+      return;
+    }
+    // Explicitly store the authenticated session.
+    const saved=await db.auth.setSession({
+      access_token:session.access_token,
+      refresh_token:session.refresh_token
+    });
+    if(saved.error){
+      message("loginMsg","❌ Session save failed: "+saved.error.message);
       return;
     }
     show("loginCard",false);
