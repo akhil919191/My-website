@@ -26,6 +26,10 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 .result{padding:13px;border:1px solid #d5e0db;border-radius:10px;margin-top:9px;cursor:pointer;background:#fafcfb}
 .result:hover{background:#eef7f2}
 .result b{color:#176b45}.details{line-height:1.7}
+.saved-item{padding:14px;border:1px solid #d5e0db;border-radius:10px;margin-top:10px;background:#fafcfb}
+.saved-item .title{font-weight:700;color:#176b45;font-size:16px}
+.saved-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.saved-actions button{padding:9px 12px;font-size:14px}
 .detail-line{padding:9px 0;border-bottom:1px solid #edf1ef}
 .detail-line strong{display:block;color:#176b45;font-size:13px}
 .linkbox{word-break:break-all;background:#f2f6f4;padding:10px;border-radius:8px;font-size:13px}
@@ -96,6 +100,13 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 </form>
 </div>
 
+<div class="card" id="savedDataCard">
+<h2>💾 Saved Data</h2>
+<div id="savedDataList">
+  <p class="small">ഇവിടെ save ചെയ്ത അപേക്ഷകൾ കാണിക്കും.</p>
+</div>
+</div>
+
 <div class="card">
 <h2>🔎 അപേക്ഷ തിരയുക</h2>
 <div class="search-row">
@@ -121,6 +132,63 @@ function saveCases(cases){localStorage.setItem(KEY,JSON.stringify(cases))}
 
 function val(id){return document.getElementById(id).value.trim()}
 
+
+async function loadSavedData(){
+ const list=document.getElementById("savedDataList");
+ try{
+  const response=await fetch(SUPABASE_URL+"/rest/v1/compensation_cases?select=*&order=created_at.desc",{
+   headers:{
+    "apikey":SUPABASE_ANON_KEY,
+    "Authorization":"Bearer "+SUPABASE_ANON_KEY
+   }
+  });
+  if(!response.ok) throw new Error(await response.text());
+  const rows=await response.json();
+
+  if(!rows.length){
+   list.innerHTML='<p class="small">ഇതുവരെ ഒരു അപേക്ഷയും save ചെയ്തിട്ടില്ല.</p>';
+   return;
+  }
+
+  list.innerHTML="";
+  rows.forEach(x=>{
+   const div=document.createElement("div");
+   div.className="saved-item";
+   div.innerHTML=`
+    <div class="title">${escapeHtml(x.application_no||"-")}</div>
+    <div>${escapeHtml(x.applicant_name||"-")}</div>
+    <div class="small">${escapeHtml(x.wild_animal||"-")} • ${escapeHtml(x.damaged_crops||"-")}</div>
+    <div class="saved-actions">
+      <button type="button" class="secondary viewSaved">👁 View</button>
+      <button type="button" class="secondary editSaved">✏️ Edit</button>
+    </div>`;
+   div.querySelector(".viewSaved").onclick=()=>showDetails(x);
+   div.querySelector(".editSaved").onclick=()=>editCase(x);
+   list.appendChild(div);
+  });
+ }catch(err){
+  list.innerHTML='<p class="small">Saved data load ചെയ്യാൻ കഴിഞ്ഞില്ല. Supabase table/RLS പരിശോധിക്കുക.</p>';
+  console.error(err);
+ }
+}
+
+function editCase(x){
+ const fields=[
+  "application_no","applicant_name","applicant_address","age","mobile",
+  "damage_location","wild_animal","damaged_crops","damage_details",
+  "latitude","longitude","witness_names","witness_numbers","bank_name",
+  "account_number","ifsc_code","officer_name","area","compensation_amount"
+ ];
+ fields.forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.value=x[id] ?? "";
+ });
+ document.getElementById("savedDataCard").scrollIntoView({behavior:"smooth"});
+ document.getElementById("compensationForm").dataset.editId=x.id;
+ const btn=document.querySelector('#compensationForm button[type="submit"]');
+ btn.textContent="✏️ UPDATE";
+}
+
 document.getElementById("gpsBtn").addEventListener("click",()=>{
  if(!navigator.geolocation){alert("ഈ browser GPS support ചെയ്യുന്നില്ല.");return}
  navigator.geolocation.getCurrentPosition(pos=>{
@@ -134,12 +202,13 @@ document.getElementById("compensationForm").addEventListener("submit",async e=>{
  const status=document.getElementById("status");
  status.style.display="block";
 
- const no=val("application_no"), name=val("applicant_name");
+ const no=val("application_no");
+ const editId=e.target.dataset.editId||"";
  const photo=document.getElementById("photo").files[0];
 
  const data={
   application_no:no,
-  applicant_name:name,
+  applicant_name:val("applicant_name"),
   applicant_address:val("applicant_address"),
   age:val("age")||null,
   mobile:val("mobile"),
@@ -161,8 +230,14 @@ document.getElementById("compensationForm").addEventListener("submit",async e=>{
  };
 
  try{
-  const response=await fetch(SUPABASE_URL+"/rest/v1/compensation_cases",{
-   method:"POST",
+  let url=SUPABASE_URL+"/rest/v1/compensation_cases";
+  let method="POST";
+  if(editId){
+   url += "?id=eq."+encodeURIComponent(editId);
+   method="PATCH";
+  }
+  const response=await fetch(url,{
+   method,
    headers:{
     "Content-Type":"application/json",
     "apikey":SUPABASE_ANON_KEY,
@@ -173,18 +248,32 @@ document.getElementById("compensationForm").addEventListener("submit",async e=>{
   });
   const text=await response.text();
   if(!response.ok) throw new Error(text||"Save failed");
-  const saved=JSON.parse(text);
-  const id=saved[0]?.id;
+
   status.className="success";
-  status.innerHTML=`<b>Saved successfully!</b><br>Application No.: ${escapeHtml(no)}${id?`<br><small>Record ID: ${escapeHtml(id)}</small>`:""}`;
+  status.innerHTML=editId
+   ? `<b>Updated successfully!</b><br>Application No.: ${escapeHtml(no)}`
+   : `<b>Saved successfully!</b><br>Application No.: ${escapeHtml(no)}`;
+
+  delete e.target.dataset.editId;
   e.target.reset();
   document.getElementById("latitude").value="";
   document.getElementById("longitude").value="";
+  document.querySelector('#compensationForm button[type="submit"]').textContent="💾 SAVE";
+
+  await loadSavedData();
+  document.getElementById("savedDataCard").scrollIntoView({behavior:"smooth"});
  }catch(err){
   status.className="error";
-  status.innerText="Save ചെയ്യാൻ കഴിഞ്ഞില്ല. Supabase table/RLS setup പൂർത്തിയായിട്ടുണ്ടോ എന്ന് പരിശോധിക്കുക.";
+  let msg=String(err.message||err);
+  if(msg.includes("duplicate key")||msg.includes("compensation_cases_application_no_key"))
+    msg="ഈ അപേക്ഷ നമ്പർ ഇതിനകം save ചെയ്തിട്ടുണ്ട്. വേറെ Application No. നൽകുക.";
+  else if(msg.includes("relation")&&msg.includes("does not exist"))
+    msg="Supabase-ൽ compensation_cases table ഇല്ല. SQL setup വീണ്ടും Run ചെയ്യണം.";
+  else if(msg.includes("row-level security")||msg.includes("RLS"))
+    msg="Supabase RLS policy പ്രശ്നമാണ്. SQL setup വീണ്ടും Run ചെയ്യണം.";
+  else msg="Save ചെയ്യാൻ കഴിഞ്ഞില്ല: "+msg;
+  status.innerText=msg;
   console.error(err);
- }
 });
 document.getElementById("searchBtn").addEventListener("click",async()=>{
  const no=val("searchNo"), name=val("searchName");
@@ -217,6 +306,7 @@ document.getElementById("searchBtn").addEventListener("click",async()=>{
   results.innerHTML='<p class="small">Search ചെയ്യാൻ കഴിഞ്ഞില്ല. Supabase table/RLS setup പരിശോധിക്കുക.</p>';
   console.error(err);
  }
+});
 function showDetails(x){
  if(!x)return;
  const fields=[
@@ -237,6 +327,8 @@ function showDetails(x){
  document.getElementById("detailsCard").scrollIntoView({behavior:"smooth"});
 }
 document.getElementById("backBtn").onclick=()=>document.getElementById("detailsCard").classList.add("hidden");
+
+loadSavedData();
 
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 </script>
