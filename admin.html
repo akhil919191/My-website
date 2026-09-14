@@ -78,7 +78,7 @@ button{border:0;border-radius:12px;padding:12px 16px;font-weight:800;font-size:1
 
     <div class="card hidden" id="editCard">
       <h2>✏️ Edit Application</h2>
-      <div id="editForm"></div>
+      <div id="cropEditHint" style="background:#eef6ff;border-radius:12px;padding:10px;margin-bottom:10px;color:#174a8b;font-weight:700">🌾 വിളയുടെ വിശദാംശങ്ങൾ: വിള – അവസ്ഥ – എണ്ണം എന്ന രീതിയിൽ തിരുത്താം.</div><div id="editForm"></div>
       <div class="toolbar">
         <button class="green" id="updateBtn">Save Changes</button>
         <button class="light" id="cancelEditBtn">Cancel</button>
@@ -202,7 +202,7 @@ window.startEdit=async function(id){
     ["applicant_address","അപേക്ഷകന്റെ വിലാസം","textarea"],["age","വയസ്സ്","number"],["mobile","മൊബൈൽ നമ്പർ","text"],
     ["damage_location","കൃഷിനാശം സംഭവിച്ച സ്ഥലം","text"],["wild_animal","വന്യമൃഗം","text"],
     ["gun_license","Gun ലൈസൻസ്","select"],["forest_crime_accused","വന കുറ്റകൃത്യത്തിൽ പ്രതിയാണോ","select"],
-    ["damaged_crops","🌾 നാശം സംഭവിച്ച വിളകളുടെ വിശദാംശങ്ങൾ (വിള – അവസ്ഥ – എണ്ണം)","textarea"],["damaged_crop_count","നാശം സംഭവിച്ച വിളകളുടെ എണ്ണം","number"],
+    ["damaged_crops","🌾 നാശം സംഭവിച്ച വിളകളുടെ വിശദാംശങ്ങൾ (വിള – അവസ്ഥ – എണ്ണം)","textarea"],
     ["damage_details","കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ","textarea"],["latitude","Latitude","text"],["longitude","Longitude","text"],
     ["witness_names","സാക്ഷിയുടെ പേര്","text"],["witness_numbers","സാക്ഷിയുടെ നമ്പർ","text"],
     ["officer_name","പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ","text"],["area","വിസ്തീർണ്ണം","text"],["compensation_amount","നഷ്ടപരിഹാര തുക","number"]
@@ -217,7 +217,7 @@ $("cancelEditBtn").onclick=()=>{show($("editCard"),false);show($("detailsCard"),
 $("updateBtn").onclick=async()=>{
   if(!currentCase)return;
   const patch={};
-  ["application_no","applicant_name","applicant_address","age","mobile","damage_location","wild_animal","gun_license","forest_crime_accused","damaged_crops","damaged_crop_count","damage_details","latitude","longitude","witness_names","witness_numbers","officer_name","area","compensation_amount"].forEach(k=>{
+  ["application_no","applicant_name","applicant_address","age","mobile","damage_location","wild_animal","gun_license","forest_crime_accused","damaged_crops","damage_details","latitude","longitude","witness_names","witness_numbers","officer_name","area","compensation_amount"].forEach(k=>{
     const el=$("e_"+k); if(el) patch[k]=el.value.trim()===""?null:el.value.trim();
   });
   if(patch.application_no && !/^\d{4,}$/.test(patch.application_no)){msg("editMsg","അപേക്ഷ നമ്പർ 4 അക്കമെങ്കിലും വേണം.");return}
