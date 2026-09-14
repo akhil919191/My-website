@@ -151,7 +151,28 @@ form.addEventListener("submit", async (e) => {
       body: JSON.stringify(data)
     });
 
-    if (!response.ok) throw new Error(await response.text());
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      // Duplicate application number
+      if (response.status === 409 || errorText.includes("23505") || errorText.toLowerCase().includes("duplicate")) {
+        statusBox.className = "error";
+        statusBox.style.display = "block";
+        statusBox.innerHTML =
+          "⚠️ <strong>ഈ അപേക്ഷ നമ്പർ ഇതിനകം നിലവിലുണ്ട്.</strong><br>" +
+          "വേറെ അപേക്ഷ നമ്പർ നൽകുക." +
+          '<br><button type="button" id="changeApplicationNo" style="margin-top:10px;padding:9px 14px;border:0;border-radius:8px;background:#176b4d;color:white;font-weight:700;">അപേക്ഷ നമ്പർ മാറ്റുക</button>';
+
+        document.getElementById("changeApplicationNo").onclick = () => {
+          const field = document.getElementById("application_no");
+          field.focus();
+          field.select();
+        };
+        return;
+      }
+
+      throw new Error(errorText);
+    }
 
     statusBox.className = "success";
     statusBox.style.display = "block";
@@ -161,7 +182,9 @@ form.addEventListener("submit", async (e) => {
     console.error(error);
     statusBox.className = "error";
     statusBox.style.display = "block";
-    statusBox.textContent = "❌ Save failed. Please try again.";
+    statusBox.innerHTML =
+      "❌ <strong>Save failed.</strong><br>" +
+      "കാരണം: " + (error.message || "Unknown error");
   }
 });
 
