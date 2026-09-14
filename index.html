@@ -32,7 +32,7 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 .saved-actions button{padding:9px 12px;font-size:14px}
 .detail-line{padding:9px 0;border-bottom:1px solid #edf1ef}
 .detail-line strong{display:block;color:#176b45;font-size:13px}
-.linkbox{word-break:break-all;background:#f2f6f4;padding:10px;border-radius:8px;font-size:13px}
+.linkbox{word-break:break-all;background:#f2f6f4;padding:10px;border-radius:8px;font-size:13px}.admin-box{margin-top:18px;padding:15px;border:1px solid #d5e0db;border-radius:12px;background:#f8fbf9}.admin-box h3{margin:0 0 10px;color:#176b45;font-size:17px}
 @media(max-width:600px){.row,.search-row{grid-template-columns:1fr}.card{padding:16px}}
 </style>
 </head>
@@ -118,8 +118,16 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 </div>
 
 <div class="card hidden" id="detailsCard">
-<h2>അപേക്ഷയുടെ വിശദാംശങ്ങൾ</h2>
+<h2>📋 Administration Details</h2>
 <div id="details" class="details"></div>
+
+<div class="admin-box">
+  <h3>💬 Comment / Remarks</h3>
+  <textarea id="adminRemarks" placeholder="ഇവിടെ Comment / Remarks എഴുതുക..."></textarea>
+  <button class="primary" type="button" id="saveRemarksBtn">💾 SAVE COMMENT</button>
+  <div id="remarksStatus" class="small" style="margin-top:8px"></div>
+</div>
+
 <button class="secondary" type="button" id="backBtn" style="margin-top:14px">← Search-ലേക്ക് മടങ്ങുക</button>
 </div>
 </main>
@@ -177,7 +185,7 @@ function editCase(x){
   "application_no","applicant_name","applicant_address","age","mobile",
   "damage_location","wild_animal","damaged_crops","damage_details",
   "latitude","longitude","witness_names","witness_numbers","bank_name",
-  "account_number","ifsc_code","officer_name","area","compensation_amount"
+  "account_number","ifsc_code","officer_name","area","compensation_amount","admin_remarks"
  ];
  fields.forEach(id=>{
   const el=document.getElementById(id);
@@ -226,7 +234,8 @@ document.getElementById("compensationForm").addEventListener("submit",async e=>{
   ifsc_code:val("ifsc_code"),
   officer_name:val("officer_name"),
   area:val("area"),
-  compensation_amount:val("compensation_amount")||null
+  compensation_amount:val("compensation_amount")||null,
+  admin_remarks:val("adminRemarks")||null
  };
 
  try{
@@ -258,6 +267,7 @@ document.getElementById("compensationForm").addEventListener("submit",async e=>{
   e.target.reset();
   document.getElementById("latitude").value="";
   document.getElementById("longitude").value="";
+  document.getElementById("adminRemarks").value="";
   document.querySelector('#compensationForm button[type="submit"]').textContent="💾 SAVE";
 
   await loadSavedData();
@@ -323,9 +333,28 @@ function showDetails(x){
  ];
  document.getElementById("details").innerHTML=fields.map(f=>
   `<div class="detail-line"><strong>${escapeHtml(f[0])}</strong>${escapeHtml(f[1]||"-")}</div>`).join("");
+ document.getElementById("adminRemarks").value=x.admin_remarks||"";
+ document.getElementById("saveRemarksBtn").dataset.caseId=x.id||"";
+ document.getElementById("remarksStatus").textContent="";
  document.getElementById("detailsCard").classList.remove("hidden");
  document.getElementById("detailsCard").scrollIntoView({behavior:"smooth"});
 }
+document.getElementById("saveRemarksBtn").onclick=async()=>{
+ const id=document.getElementById("saveRemarksBtn").dataset.caseId;
+ const remarks=document.getElementById("adminRemarks").value.trim();
+ const out=document.getElementById("remarksStatus");
+ if(!id){out.textContent="Application തിരഞ്ഞെടുക്കുക.";return}
+ try{
+  const response=await fetch(SUPABASE_URL+"/rest/v1/compensation_cases?id=eq."+encodeURIComponent(id),{
+   method:"PATCH",headers:{"Content-Type":"application/json","apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+SUPABASE_ANON_KEY,"Prefer":"return=minimal"},
+   body:JSON.stringify({admin_remarks:remarks})
+  });
+  if(!response.ok) throw new Error(await response.text());
+  out.textContent="Comment / Remarks saved successfully.";
+  await loadSavedData();
+ }catch(err){out.textContent="Comment save ചെയ്യാൻ കഴിഞ്ഞില്ല. Supabase UPDATE policy പരിശോധിക്കുക.";console.error(err)}
+};
+
 document.getElementById("backBtn").onclick=()=>document.getElementById("detailsCard").classList.add("hidden");
 
 loadSavedData();
