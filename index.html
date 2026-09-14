@@ -281,7 +281,8 @@ document.getElementById("application_no")?.addEventListener("change",()=>checkAp
 
 async function uploadPhoto(file, applicationNo){
   if(!file) return null;
-  const safeNo = applicationNo.replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,80);
+  const safeBase = String(applicationNo || "application");
+  const safeNo = safeBase.replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,80) || "application";
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g,"") || "jpg";
   const path = safeNo + "/" + Date.now() + "-" + Math.random().toString(36).slice(2,10) + "." + ext;
 
@@ -338,7 +339,6 @@ form.addEventListener("submit", async (e)=>{
     gun_license:gun,
     forest_crime_accused:forest,
     damaged_crops:val("damaged_crops"),
-    damaged_crop_count:val("damaged_crop_count") ? Number(val("damaged_crop_count")) : null,
     damage_details:val("damage_details"),
     latitude:val("latitude"),
     longitude:val("longitude"),
