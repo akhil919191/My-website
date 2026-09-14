@@ -79,6 +79,7 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 <input id="longitude" type="text" placeholder="Longitude" readonly>
 </div>
 <button type="button" class="secondary" id="gpsBtn">📍 GPS Location എടുക്കുക</button>
+<div id="gpsStatus" class="small" style="margin-top:8px"></div>
 
 <label>സ്ഥലത്തിന്റെ ഫോട്ടോ</label>
 <div class="photo-box">
@@ -97,6 +98,7 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 </form>
 </div>
 
+
 </main>
 
 <script>
@@ -113,6 +115,8 @@ function val(id){
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+  statusBox.style.display = "block";
+  statusBox.className = "";
   statusBox.textContent = "Saving...";
 
   const data = {
@@ -147,15 +151,16 @@ form.addEventListener("submit", async (e) => {
       body: JSON.stringify(data)
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(err || "Save failed");
-    }
+    if (!response.ok) throw new Error(await response.text());
 
+    statusBox.className = "success";
+    statusBox.style.display = "block";
     statusBox.textContent = "✅ Saved successfully!";
     form.reset();
   } catch (error) {
     console.error(error);
+    statusBox.className = "error";
+    statusBox.style.display = "block";
     statusBox.textContent = "❌ Save failed. Please try again.";
   }
 });
@@ -173,9 +178,7 @@ document.getElementById("gpsBtn")?.addEventListener("click", () => {
       document.getElementById("longitude").value = pos.coords.longitude.toFixed(6);
       status.textContent = "✅ GPS captured.";
     },
-    () => {
-      status.textContent = "❌ GPS permission/location unavailable.";
-    }
+    () => { status.textContent = "❌ GPS permission/location unavailable."; }
   );
 });
 </script>
