@@ -57,8 +57,9 @@ button{border:0;border-radius:10px;padding:9px 12px;font-weight:800;font-size:13
 </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL="https://jrccmucxwgebdurcokix.supabase.co";
+const URL="https://jrccmucxwgebdurcokix.supabase.co";
 const KEY="sb_publishable_-IbSEjr2Nn_TpO-jRAujUQ_q-kugYET";
 let accessToken="";
 let rows=[],current=null;
@@ -93,7 +94,7 @@ async function login(){
   $("loginBtn").disabled=true;
   message("loginMsg","Login ചെയ്യുന്നു...",true);
   try{
-    const r=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{
+    const r=await fetch(URL+"/auth/v1/token?grant_type=password",{
       method:"POST",
       headers:{"apikey":KEY,"Content-Type":"application/json"},
       body:JSON.stringify({email,password})
@@ -122,43 +123,23 @@ function authHeaders(extra={}){
 
 async function api(path,options={}){
   if(!accessToken) throw new Error("Login required");
-  const r=await fetch(SUPABASE_URL+path,{...options,headers:authHeaders(options.headers||{})});
+  const r=await fetch(URL+path,{...options,headers:authHeaders(options.headers||{})});
   const text=await r.text();
   let data=null; try{data=text?JSON.parse(text):null}catch(e){data=text}
   if(!r.ok) throw new Error(data?.message||data?.error||data?.details||text||("HTTP "+r.status));
   return data;
 }
 
-function initAdmin(){
-  $("loginBtn").addEventListener("click", login);
-  $("password").addEventListener("keydown", e=>{if(e.key==="Enter")login()});
-  $("logoutBtn").onclick=()=>resetPage();
-  $("reportBtn").onclick=async()=>{
-    if(!accessToken){resetPage();return}
-    show("reportCard",true);show("detailCard",false);show("editCard",false);
-    await loadRows();
-  };
-  $("search").oninput=function(){
-    let q=this.value.toLowerCase().trim();
-    render(rows.filter(r=>String(r.application_no||"").toLowerCase().includes(q)||String(r.applicant_name||"").toLowerCase().includes(q)));
-  };
-  $("backBtn").onclick=()=>{show("detailCard",false);show("reportCard",true);loadRows()};
-  $("editBtn").onclick=()=>current&&editCase(current.id);
-  
-  $("updateBtn").onclick=updateApplication;
-  $("commentBtn").onclick=saveComment;
-  resetPage();
-}
-window.addEventListener("error", e=>{
-  const el=document.getElementById("loginMsg");
-  if(el) el.innerHTML='<div class="msg err">❌ Page error: '+esc(e.message||"JavaScript error")+'</div>';
-});
-window.addEventListener("unhandledrejection", e=>{
-  const el=document.getElementById("loginMsg");
-  if(el) el.innerHTML='<div class="msg err">❌ Error: '+esc(e.reason?.message||e.reason||"Unknown error")+'</div>';
-});
+$("loginBtn").addEventListener("click",login);
+$("password").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
 
+$("logoutBtn").onclick=()=>resetPage();
 
+$("reportBtn").onclick=async()=>{
+  if(!accessToken){resetPage();return}
+  show("reportCard",true);show("detailCard",false);show("editCard",false);
+  await loadRows();
+};
 
 async function loadRows(){
   $("list").textContent="Loading...";
@@ -182,7 +163,10 @@ function render(list){
   </div>`).join("");
 }
 
-
+$("search").oninput=function(){
+  let q=this.value.toLowerCase().trim();
+  render(rows.filter(r=>String(r.application_no||"").toLowerCase().includes(q)||String(r.applicant_name||"").toLowerCase().includes(q)));
+};
 
 const labels={
  application_no:"അപേക്ഷ നമ്പർ",applicant_name:"അപേക്ഷകന്റെ പേര്",applicant_address:"അപേക്ഷകന്റെ വിലാസം",
@@ -216,7 +200,7 @@ window.openCase=async function(id){
         });
         if(p?.signedURL){
           let u=String(p.signedURL);
-          if(u.startsWith("/"))u=SUPABASE_URL+u;
+          if(u.startsWith("/"))u=URL+u;
           $("photoBox").innerHTML='<h3>📷 സ്ഥലം ഫോട്ടോ</h3><img class="photo" src="'+esc(u)+'">';
         }
       }catch(e){$("photoBox").innerHTML='<div class="msg err">Photo load failed: '+esc(e.message)+'</div>'}
@@ -225,7 +209,8 @@ window.openCase=async function(id){
   }catch(e){alert(e.message)}
 };
 
-
+$("backBtn").onclick=()=>{show("detailCard",false);show("reportCard",true);loadRows()};
+$("editBtn").onclick=()=>current&&editCase(current.id);
 
 window.editCase=async function(id){
   try{
@@ -255,9 +240,9 @@ window.editCase=async function(id){
   }catch(e){alert(e.message)}
 };
 
+$("cancelBtn").onclick=()=>{show("editCard",false);show("detailCard",true)};
 
-
-async function updateApplication(){
+$("updateBtn").onclick=async()=>{
   if(!current)return;
   let patch={};
   ["application_no","applicant_name","applicant_address","age","inspection_date","mobile","damage_location","wild_animal","gun_license","forest_crime_accused","damaged_crops","damage_details","latitude","longitude","witness_names","witness_numbers","officer_name","area","compensation_amount"]
@@ -296,7 +281,7 @@ async function loadComments(id){
   }catch(e){$("comments").innerHTML='<div class="msg err">'+esc(e.message)+'</div>'}
 }
 
-async function saveComment(){
+$("commentBtn").onclick=async()=>{
   if(!current)return;
   let v=$("comment").value.trim();if(!v)return;
   try{
@@ -309,8 +294,7 @@ async function saveComment(){
 };
 
 // Always start with login. No saved session is used.
-if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", initAdmin);
-else initAdmin();
+resetPage();
 </script>
 </body>
 </html>
