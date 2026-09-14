@@ -80,6 +80,7 @@ async function loadCases(){
     <div class="row">
       <b>${i+1}. ${esc(r.application_no)}</b><br>${esc(r.applicant_name)}
       <button onclick="openCase('${r.id}')">Open</button>
+      <button onclick="deleteCase('${r.id}')" style="background:#d9534f;color:#fff;">Delete</button>
     </div>`).join("");
 }
 window.openCase=async(id)=>{
@@ -107,6 +108,22 @@ async function loadComments(){
     `<div class="row"><b>${new Date(c.created_at).toLocaleString()}</b><br>${esc(c.comment)}</div>`).join("")
     :"<small>No comments yet.</small>");
 }
+window.deleteCase=async(id)=>{
+  const ok=confirm("ഈ അപേക്ഷയുടെ മുഴുവൻ ഡാറ്റയും സ്ഥിരമായി Delete ചെയ്യണോ?");
+  if(!ok)return;
+
+  const {error}=await db.from("compensation_cases").delete().eq("id",id);
+  if(error){
+    alert("Delete failed: "+error.message);
+    return;
+  }
+
+  $("detailsCard").classList.add("hidden");
+  currentCase=null;
+  loadCases();
+  alert("✅ Application deleted.");
+};
+
 $("saveCommentBtn").onclick=async()=>{
   const comment=$("comment").value.trim();
   if(!comment)return;
