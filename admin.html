@@ -61,148 +61,240 @@ button{border:0;border-radius:10px;padding:9px 12px;font-weight:800;font-size:13
 <script>
 const URL="https://jrccmucxwgebdurcokix.supabase.co";
 const KEY="sb_publishable_-IbSEjr2Nn_TpO-jRAujUQ_q-kugYET";
-const db=supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
-let rows=[],current=null,initialized=false;
+let accessToken="";
+let rows=[],current=null;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const show=(id,on)=>$(id).classList.toggle("hidden",!on);
 function message(id,s,ok=false){$(id).innerHTML=s?'<div class="msg '+(ok?'ok':'err')+'">'+esc(s)+'</div>':''}
 
 function cropHTML(v){
- if(!v)return '<div class="detail"><b>🌾 വിളകളുടെ വിവരങ്ങൾ</b>ലഭ്യമല്ല</div>';
- let arr=String(v).split(",").map(x=>x.trim()).filter(Boolean), h='<div class="detail"><b>🌾 നാശം സംഭവിച്ച വിളകളുടെ വിവരങ്ങൾ</b>';
- arr.forEach(x=>{
-   let m=x.match(/^(.+?)\s*[–-]\s*(.+?)\s*[–-]\s*(\d+)\s*എണ്ണം$/);
-   h+=m?'<div class="crop"><b>'+esc(m[1])+'</b> — '+esc(m[2])+' — <b>'+esc(m[3])+' എണ്ണം</b></div>':'<div class="crop">'+esc(x)+'</div>';
- });
- return h+'</div>';
+  if(!v)return '<div class="detail"><b>🌾 വിളകളുടെ വിവരങ്ങൾ</b>ലഭ്യമല്ല</div>';
+  let arr=String(v).split(",").map(x=>x.trim()).filter(Boolean);
+  let h='<div class="detail"><b>🌾 നാശം സംഭവിച്ച വിളകളുടെ വിവരങ്ങൾ</b>';
+  arr.forEach(x=>{
+    let m=x.match(/^(.+?)\s*[–-]\s*(.+?)\s*[–-]\s*(\d+)\s*എണ്ണം$/);
+    h+=m?'<div class="crop"><b>'+esc(m[1])+'</b> — '+esc(m[2])+' — <b>'+esc(m[3])+' എണ്ണം</b></div>':'<div class="crop">'+esc(x)+'</div>';
+  });
+  return h+'</div>';
 }
 
-async function hardLoginGate(){
-  // Start every fresh page visit at the login screen.
-  // Clear only the local Supabase session; do not block the login flow.
-  initialized=false;
-  show("loginCard",true);
-  show("app",false);
-  show("reportCard",false);
-  show("detailCard",false);
-  show("editCard",false);
-  try { await db.auth.signOut({scope:"local"}); } catch(e) {}
-  initialized=true;
+function resetPage(){
+  accessToken="";
+  rows=[]; current=null;
+  show("loginCard",true); show("app",false);
+  show("reportCard",false); show("detailCard",false); show("editCard",false);
+  $("email").value=""; $("password").value="";
+  message("loginMsg","");
 }
+
 async function login(){
-  const email=$("email").value.trim();
-  const password=$("password").value;
-  if(!email || !password){message("loginMsg","Email, password രണ്ടും നൽകുക.");return}
+  const email=$("email").value.trim(), password=$("password").value;
+  if(!email||!password){message("loginMsg","Email, password രണ്ടും നൽകുക.");return}
   $("loginBtn").disabled=true;
   message("loginMsg","Login ചെയ്യുന്നു...",true);
   try{
-    const result=await db.auth.signInWithPassword({email,password});
-    if(result.error){
-      message("loginMsg","❌ Login failed: "+result.error.message);
-      return;
-    }
-    const session = result.data && result.data.session;
-    if(!session){
-      message("loginMsg","❌ Login session ലഭിച്ചില്ല. Email/password പരിശോധിക്കുക.");
-      return;
-    }
-    // Explicitly store the authenticated session.
-    const saved=await db.auth.setSession({
-      access_token:session.access_token,
-      refresh_token:session.refresh_token
+    const r=await fetch(URL+"/auth/v1/token?grant_type=password",{
+      method:"POST",
+      headers:{"apikey":KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({email,password})
     });
-    if(saved.error){
-      message("loginMsg","❌ Session save failed: "+saved.error.message);
+    const d=await r.json();
+    if(!r.ok){
+      message("loginMsg","❌ Login failed: "+(d.error_description||d.msg||d.message||"Invalid login"));
       return;
     }
-    show("loginCard",false);
-    show("app",true);
+    if(!d.access_token){message("loginMsg","❌ Login session ലഭിച്ചില്ല.");return}
+    accessToken=d.access_token;
+    show("loginCard",false); show("app",true);
+    show("reportCard",false); show("detailCard",false); show("editCard",false);
     message("loginMsg","");
   }catch(e){
-    message("loginMsg","Login failed: "+(e.message||e));
-  }finally{
-    $("loginBtn").disabled=false;
-  }
+    message("loginMsg","❌ Network/Login error: "+(e.message||e));
+  }finally{$("loginBtn").disabled=false}
 }
-$("loginBtn").onclick=login;
+
+function authHeaders(extra={}){
+  return Object.assign({
+    "apikey":KEY,
+    "Authorization":"Bearer "+accessToken
+  },extra);
+}
+
+async function api(path,options={}){
+  if(!accessToken) throw new Error("Login required");
+  const r=await fetch(URL+path,{...options,headers:authHeaders(options.headers||{})});
+  const text=await r.text();
+  let data=null; try{data=text?JSON.parse(text):null}catch(e){data=text}
+  if(!r.ok) throw new Error(data?.message||data?.error||data?.details||text||("HTTP "+r.status));
+  return data;
+}
+
+$("loginBtn").addEventListener("click",login);
 $("password").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
 
-db.auth.onAuthStateChange((_event,session)=>{
- if(!initialized)return;
- if(!session){
-   show("loginCard",true);show("app",false);show("reportCard",false);show("detailCard",false);show("editCard",false);
- }
-});
+$("logoutBtn").onclick=()=>resetPage();
 
-$("logoutBtn").onclick=async()=>{await db.auth.signOut({scope:"local"});};
 $("reportBtn").onclick=async()=>{
- const {data}=await db.auth.getSession(); if(!data.session){await hardLoginGate();return}
- show("reportCard",true);show("detailCard",false);show("editCard",false);await loadRows();
+  if(!accessToken){resetPage();return}
+  show("reportCard",true);show("detailCard",false);show("editCard",false);
+  await loadRows();
 };
-async function loadRows(){
- $("list").textContent="Loading...";
- const {data,error}=await db.from("compensation_cases").select("*").order("created_at",{ascending:true});
- if(error){$("list").innerHTML='<div class="msg err">'+esc(error.message)+'</div>';return}
- rows=data||[];render(rows);
-}
-function render(list){
- if(!list.length){$("list").textContent="No applications found.";return}
- $("list").innerHTML=list.map((r,i)=>`<div class="item">
- <div class="itemtop"><div><div class="appno">${i+1}. ${esc(r.application_no||"Application No. ഇല്ല")}</div><div class="name">${esc(r.applicant_name||"")}</div></div></div>
- <div class="small-actions"><button class="primary" onclick="openCase('${r.id}')">Open</button><button class="light" onclick="editCase('${r.id}')">✏️ Edit</button><button class="danger" onclick="removeCase('${r.id}')">🗑️ Delete</button></div>
- </div>`).join("");
-}
-$("search").oninput=function(){let q=this.value.toLowerCase().trim();render(rows.filter(r=>String(r.application_no||"").toLowerCase().includes(q)||String(r.applicant_name||"").toLowerCase().includes(q)))};
 
-const labels={application_no:"അപേക്ഷ നമ്പർ",applicant_name:"അപേക്ഷകന്റെ പേര്",applicant_address:"അപേക്ഷകന്റെ വിലാസം",age:"വയസ്സ്",mobile:"മൊബൈൽ നമ്പർ",damage_location:"കൃഷിനാശം സംഭവിച്ച സ്ഥലം",wild_animal:"കൃഷിനാശം വരുത്തിയ വന്യമൃഗം",gun_license:"Gun ലൈസൻസ്",forest_crime_accused:"വന സംബന്ധമായ കുറ്റകൃത്യങ്ങളിൽ പ്രതിയാണോ",damage_details:"കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ",latitude:"GPS Latitude",longitude:"GPS Longitude",witness_names:"സാക്ഷിയുടെ പേര്",witness_numbers:"സാക്ഷിയുടെ നമ്പർ",officer_name:"പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ",area:"വിസ്തീർണ്ണം",compensation_amount:"നഷ്ടപരിഹാര തുക"};
+async function loadRows(){
+  $("list").textContent="Loading...";
+  try{
+    rows=await api("/rest/v1/compensation_cases?select=*&order=created_at.asc");
+    render(rows||[]);
+  }catch(e){
+    $("list").innerHTML='<div class="msg err">'+esc(e.message)+'</div>';
+  }
+}
+
+function render(list){
+  if(!list.length){$("list").textContent="No applications found.";return}
+  $("list").innerHTML=list.map((r,i)=>`<div class="item">
+    <div class="itemtop"><div><div class="appno">${i+1}. ${esc(r.application_no||"Application No. ഇല്ല")}</div><div class="name">${esc(r.applicant_name||"")}</div></div></div>
+    <div class="small-actions">
+      <button class="primary" onclick="openCase('${r.id}')">Open</button>
+      <button class="light" onclick="editCase('${r.id}')">✏️ Edit</button>
+      <button class="danger" onclick="removeCase('${r.id}')">🗑️ Delete</button>
+    </div>
+  </div>`).join("");
+}
+
+$("search").oninput=function(){
+  let q=this.value.toLowerCase().trim();
+  render(rows.filter(r=>String(r.application_no||"").toLowerCase().includes(q)||String(r.applicant_name||"").toLowerCase().includes(q)));
+};
+
+const labels={
+ application_no:"അപേക്ഷ നമ്പർ",applicant_name:"അപേക്ഷകന്റെ പേര്",applicant_address:"അപേക്ഷകന്റെ വിലാസം",
+ age:"വയസ്സ്",inspection_date:"സ്ഥലം പരിശോധിച്ച തീയതി",mobile:"മൊബൈൽ നമ്പർ",
+ damage_location:"കൃഷിനാശം സംഭവിച്ച സ്ഥലം",wild_animal:"കൃഷിനാശം വരുത്തിയ വന്യമൃഗം",
+ gun_license:"Gun ലൈസൻസ്",forest_crime_accused:"വന സംബന്ധമായ കുറ്റകൃത്യങ്ങളിൽ പ്രതിയാണോ",
+ damage_details:"കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ",latitude:"GPS Latitude",longitude:"GPS Longitude",
+ witness_names:"സാക്ഷിയുടെ പേര്",witness_numbers:"സാക്ഷിയുടെ നമ്പർ",officer_name:"പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ",
+ area:"വിസ്തീർണ്ണം",compensation_amount:"നഷ്ടപരിഹാര തുക"
+};
 
 window.openCase=async function(id){
- const {data,error}=await db.from("compensation_cases").select("*").eq("id",id).single();if(error){alert(error.message);return}
- current=data;show("reportCard",false);show("editCard",false);show("detailCard",true);
- let h='<div class="grid">';
- Object.keys(labels).forEach(k=>{if(data[k]!==null&&data[k]!==undefined&&data[k]!=="")h+='<div class="detail"><b>'+labels[k]+'</b>'+esc(data[k])+'</div>'});
- h+=cropHTML(data.damaged_crops)+'</div>'; $("details").innerHTML=h;
- $("photoBox").innerHTML="";
- if(data.photo_name){const {data:p}=await db.storage.from("compensation-photos").createSignedUrl(data.photo_name,3600);if(p?.signedUrl)$("photoBox").innerHTML='<h3>📷 സ്ഥലം ഫോട്ടോ</h3><img class="photo" src="'+esc(p.signedUrl)+'">';}
- await loadComments(id);
+  try{
+    const data=await api("/rest/v1/compensation_cases?select=*&id=eq."+encodeURIComponent(id));
+    if(!data?.length)throw new Error("Application not found");
+    current=data[0];
+    show("reportCard",false);show("editCard",false);show("detailCard",true);
+    let h='<div class="grid">';
+    Object.keys(labels).forEach(k=>{
+      if(current[k]!==null&&current[k]!==undefined&&current[k]!=="")
+        h+='<div class="detail"><b>'+labels[k]+'</b>'+esc(current[k])+'</div>';
+    });
+    h+=cropHTML(current.damaged_crops)+'</div>';
+    $("details").innerHTML=h;
+    $("photoBox").innerHTML="";
+    if(current.photo_name){
+      try{
+        const p=await api("/storage/v1/object/sign/compensation-photos/"+current.photo_name,{
+          method:"POST",headers:{"apikey":KEY,"Authorization":"Bearer "+accessToken,"Content-Type":"application/json"},
+          body:JSON.stringify({expiresIn:3600})
+        });
+        if(p?.signedURL){
+          let u=String(p.signedURL);
+          if(u.startsWith("/"))u=URL+u;
+          $("photoBox").innerHTML='<h3>📷 സ്ഥലം ഫോട്ടോ</h3><img class="photo" src="'+esc(u)+'">';
+        }
+      }catch(e){$("photoBox").innerHTML='<div class="msg err">Photo load failed: '+esc(e.message)+'</div>'}
+    }
+    await loadComments(id);
+  }catch(e){alert(e.message)}
 };
+
 $("backBtn").onclick=()=>{show("detailCard",false);show("reportCard",true);loadRows()};
 $("editBtn").onclick=()=>current&&editCase(current.id);
 
 window.editCase=async function(id){
- const {data,error}=await db.from("compensation_cases").select("*").eq("id",id).single();if(error){alert(error.message);return}
- current=data;show("reportCard",false);show("detailCard",false);show("editCard",true);
- const f=[["application_no","അപേക്ഷ നമ്പർ","text"],["applicant_name","അപേക്ഷകന്റെ പേര്","text"],["applicant_address","അപേക്ഷകന്റെ വിലാസം","textarea"],["age","വയസ്സ്","number"],["mobile","മൊബൈൽ നമ്പർ","text"],["damage_location","കൃഷിനാശം സംഭവിച്ച സ്ഥലം","text"],["wild_animal","വന്യമൃഗം","text"],["gun_license","Gun ലൈസൻസ്","select"],["forest_crime_accused","വന കുറ്റകൃത്യങ്ങളിൽ പ്രതിയാണോ","select"],["damaged_crops","🌾 വിള – അവസ്ഥ – എണ്ണം","textarea"],["damage_details","കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ","textarea"],["latitude","GPS Latitude","text"],["longitude","GPS Longitude","text"],["witness_names","സാക്ഷിയുടെ പേര്","text"],["witness_numbers","സാക്ഷിയുടെ നമ്പർ","text"],["officer_name","പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ","text"],["area","വിസ്തീർണ്ണം","text"],["compensation_amount","നഷ്ടപരിഹാര തുക","number"]];
- $("editForm").innerHTML=f.map(x=>x[2]==="textarea"?'<label>'+x[1]+'</label><textarea id="e_'+x[0]+'" rows="3">'+esc(data[x[0]]||"")+'</textarea>':x[2]==="select"?'<label>'+x[1]+'</label><select id="e_'+x[0]+'"><option value="">തിരഞ്ഞെടുക്കുക</option><option '+(data[x[0]]==="ഉണ്ട്"?"selected":"")+' value="ഉണ്ട്">ഉണ്ട്</option><option '+(data[x[0]]==="ഇല്ല"?"selected":"")+' value="ഇല്ല">ഇല്ല</option></select>':'<label>'+x[1]+'</label><input id="e_'+x[0]+'" type="'+x[2]+'" value="'+esc(data[x[0]]??"")+'">').join("");
+  try{
+    const dataArr=await api("/rest/v1/compensation_cases?select=*&id=eq."+encodeURIComponent(id));
+    if(!dataArr?.length)throw new Error("Application not found");
+    const data=dataArr[0]; current=data;
+    show("reportCard",false);show("detailCard",false);show("editCard",true);
+    const f=[
+      ["application_no","അപേക്ഷ നമ്പർ","text"],["applicant_name","അപേക്ഷകന്റെ പേര്","text"],
+      ["applicant_address","അപേക്ഷകന്റെ വിലാസം","textarea"],["age","വയസ്സ്","number"],
+      ["inspection_date","സ്ഥലം പരിശോധിച്ച തീയതി","date"],["mobile","മൊബൈൽ നമ്പർ","text"],
+      ["damage_location","കൃഷിനാശം സംഭവിച്ച സ്ഥലം","text"],["wild_animal","വന്യമൃഗം","text"],
+      ["gun_license","Gun ലൈസൻസ്","select"],["forest_crime_accused","വന കുറ്റകൃത്യങ്ങളിൽ പ്രതിയാണോ","select"],
+      ["damaged_crops","🌾 വിള – അവസ്ഥ – എണ്ണം","textarea"],["damage_details","കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ","textarea"],
+      ["latitude","GPS Latitude","text"],["longitude","GPS Longitude","text"],
+      ["witness_names","സാക്ഷിയുടെ പേര്","text"],["witness_numbers","സാക്ഷിയുടെ നമ്പർ","text"],
+      ["officer_name","പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ","text"],["area","വിസ്തീർണ്ണം","text"],
+      ["compensation_amount","നഷ്ടപരിഹാര തുക","number"]
+    ];
+    $("editForm").innerHTML=f.map(x=>
+      x[2]==="textarea"
+      ?'<label>'+x[1]+'</label><textarea id="e_'+x[0]+'" rows="3">'+esc(data[x[0]]||"")+'</textarea>'
+      :x[2]==="select"
+      ?'<label>'+x[1]+'</label><select id="e_'+x[0]+'"><option value="">തിരഞ്ഞെടുക്കുക</option><option '+(data[x[0]]==="ഉണ്ട്"?"selected":"")+' value="ഉണ്ട്">ഉണ്ട്</option><option '+(data[x[0]]==="ഇല്ല"?"selected":"")+' value="ഇല്ല">ഇല്ല</option></select>'
+      :'<label>'+x[1]+'</label><input id="e_'+x[0]+'" type="'+x[2]+'" value="'+esc(data[x[0]]??"")+'">'
+    ).join("");
+  }catch(e){alert(e.message)}
 };
-$("cancelBtn").onclick=()=>{show("editCard",false);show("detailCard",true)};
-$("updateBtn").onclick=async()=>{
- if(!current)return;let patch={};
- ["application_no","applicant_name","applicant_address","age","mobile","damage_location","wild_animal","gun_license","forest_crime_accused","damaged_crops","damage_details","latitude","longitude","witness_names","witness_numbers","officer_name","area","compensation_amount"].forEach(k=>{let e=$("e_"+k);if(e)patch[k]=e.value.trim()===""?null:e.value.trim()});
- if(patch.application_no&&!/^\\d{4,}$/.test(patch.application_no)){message("editMsg","അപേക്ഷ നമ്പർ നൽകിയാൽ കുറഞ്ഞത് 4 അക്കങ്ങൾ വേണം.");return}
- if(!patch.officer_name){message("editMsg","പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ നിർബന്ധമാണ്.");return}
- if(patch.gun_license==="ഉണ്ട്"||patch.forest_crime_accused==="ഉണ്ട്"){message("editMsg","ഈ അപേക്ഷ സമർപ്പിക്കാൻ യോഗ്യമല്ല.");return}
- const {error}=await db.from("compensation_cases").update(patch).eq("id",current.id);
- if(error){message("editMsg",error.message);return}
- current={...current,...patch};message("editMsg","Changes saved.",true);await openCase(current.id);
-};
-window.removeCase=async function(id){
- const {data}=await db.auth.getSession();if(!data.session){await hardLoginGate();return}
- if(!confirm("ഈ അപേക്ഷ delete ചെയ്യണോ? ഇത് തിരിച്ചെടുക്കാൻ കഴിയില്ല."))return;
- const c=rows.find(x=>x.id===id);if(c?.photo_name)await db.storage.from("compensation-photos").remove([c.photo_name]);
- const {error}=await db.from("compensation_cases").delete().eq("id",id);if(error){alert(error.message);return}
- current=null;await loadRows();
-};
-async function loadComments(id){
- const {data,error}=await db.from("compensation_comments").select("*").eq("case_id",id).order("created_at",{ascending:false});
- if(error){$("comments").innerHTML="";return}
- $("comments").innerHTML=(data||[]).map(c=>'<div class="item"><b>Remark</b><br>'+esc(c.comment||c.remarks||"")+'</div>').join("");
-}
-$("commentBtn").onclick=async()=>{if(!current)return;let v=$("comment").value.trim();if(!v)return;const {error}=await db.from("compensation_comments").insert({case_id:current.id,comment:v});if(error){message("commentMsg",error.message);return}$("comment").value="";message("commentMsg","Comment saved.",true);loadComments(current.id)};
 
-// Do this LAST: it prevents a remembered Supabase session from exposing data.
-hardLoginGate();
+$("cancelBtn").onclick=()=>{show("editCard",false);show("detailCard",true)};
+
+$("updateBtn").onclick=async()=>{
+  if(!current)return;
+  let patch={};
+  ["application_no","applicant_name","applicant_address","age","inspection_date","mobile","damage_location","wild_animal","gun_license","forest_crime_accused","damaged_crops","damage_details","latitude","longitude","witness_names","witness_numbers","officer_name","area","compensation_amount"]
+  .forEach(k=>{let e=$("e_"+k);if(e)patch[k]=e.value.trim()===""?null:e.value.trim()});
+  if(patch.application_no&&!/^\d{4,}$/.test(patch.application_no)){message("editMsg","അപേക്ഷ നമ്പർ നൽകിയാൽ കുറഞ്ഞത് 4 അക്കങ്ങൾ വേണം.");return}
+  if(!patch.applicant_name||!patch.applicant_address){message("editMsg","അപേക്ഷകന്റെ പേര്, വിലാസം നിർബന്ധമാണ്.");return}
+  if(!patch.officer_name){message("editMsg","പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ നിർബന്ധമാണ്.");return}
+  if(patch.gun_license==="ഉണ്ട്"||patch.forest_crime_accused==="ഉണ്ട്"){message("editMsg","ഈ അപേക്ഷ സമർപ്പിക്കാൻ യോഗ്യമല്ല.");return}
+  try{
+    await api("/rest/v1/compensation_cases?id=eq."+encodeURIComponent(current.id),{
+      method:"PATCH",headers:{"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify(patch)
+    });
+    current={...current,...patch};
+    message("editMsg","Changes saved.",true);
+    await openCase(current.id);
+  }catch(e){message("editMsg",e.message)}
+};
+
+window.removeCase=async function(id){
+  if(!accessToken){resetPage();return}
+  if(!confirm("ഈ അപേക്ഷ delete ചെയ്യണോ? ഇത് തിരിച്ചെടുക്കാൻ കഴിയില്ല."))return;
+  try{
+    const c=rows.find(x=>x.id===id);
+    if(c?.photo_name){
+      try{await api("/storage/v1/object/compensation-photos/"+c.photo_name,{method:"DELETE"})}catch(e){}
+    }
+    await api("/rest/v1/compensation_cases?id=eq."+encodeURIComponent(id),{method:"DELETE"});
+    current=null;await loadRows();
+  }catch(e){alert(e.message)}
+};
+
+async function loadComments(id){
+  try{
+    const data=await api("/rest/v1/compensation_comments?select=*&case_id=eq."+encodeURIComponent(id)+"&order=created_at.desc");
+    $("comments").innerHTML=(data||[]).map(c=>'<div class="item"><b>Remark</b><br>'+esc(c.comment||c.remarks||"")+'</div>').join("");
+  }catch(e){$("comments").innerHTML='<div class="msg err">'+esc(e.message)+'</div>'}
+}
+
+$("commentBtn").onclick=async()=>{
+  if(!current)return;
+  let v=$("comment").value.trim();if(!v)return;
+  try{
+    await api("/rest/v1/compensation_comments",{
+      method:"POST",headers:{"Content-Type":"application/json","Prefer":"return=minimal"},
+      body:JSON.stringify({case_id:current.id,comment:v})
+    });
+    $("comment").value="";message("commentMsg","Comment saved.",true);loadComments(current.id);
+  }catch(e){message("commentMsg",e.message)}
+};
+
+// Always start with login. No saved session is used.
+resetPage();
 </script>
 </body>
 </html>
