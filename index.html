@@ -335,7 +335,7 @@ form.addEventListener("submit", async (e)=>{
     applicant_name:val("applicant_name"),
     applicant_address:val("applicant_address"),
     age:val("age") ? Number(val("age")) : null,
-    inspection_date:val("inspection_date"),
+    inspection_date:val("inspection_date") || null,
     mobile:val("mobile"),
     damage_location:val("damage_location"),
     wild_animal:val("wild_animal"),
