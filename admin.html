@@ -23,7 +23,7 @@ button{border:0;border-radius:12px;padding:12px 16px;font-weight:800;font-size:1
 .hidden{display:none!important}.msg{padding:10px;border-radius:10px;margin-top:8px}
 .ok{background:#e9f8f0;color:#12633f}.err{background:#fff0f1;color:#a32934}
 .detailgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.detail{background:#f7f9fc;border-radius:12px;padding:11px}.detail b{display:block;font-size:12px;color:#667085;margin-bottom:4px}
+.detail{background:#f7f9fc;border-radius:12px;padding:11px}.detail b{display:block;font-size:12px;color:#667085;margin-bottom:4px}.crop-detail{margin-bottom:8px}
 .photo{width:100%;max-height:430px;object-fit:contain;border-radius:14px;background:#eef2f6;margin-top:10px}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap}
 .toolbar button{flex:1;min-width:130px}
@@ -156,17 +156,32 @@ const labels={
  application_no:"അപേക്ഷ നമ്പർ",applicant_name:"അപേക്ഷകന്റെ പേര്",applicant_address:"അപേക്ഷകന്റെ വിലാസം",
  age:"വയസ്സ്",mobile:"മൊബൈൽ നമ്പർ",damage_location:"കൃഷിനാശം സംഭവിച്ച സ്ഥലം",
  wild_animal:"കൃഷിനാശം വരുത്തിയ വന്യമൃഗം",gun_license:"Gun ലൈസൻസ്",
- forest_crime_accused:"വന സംബന്ധമായ കുറ്റകൃത്യങ്ങളിൽ പ്രതിയാണോ",damaged_crops:"നാശം സംഭവിച്ച വിളകൾ",
+ forest_crime_accused:"വന സംബന്ധമായ കുറ്റകൃത്യങ്ങളിൽ പ്രതിയാണോ",damaged_crops:"🌾 നാശം സംഭവിച്ച വിളകളുടെ വിശദാംശങ്ങൾ",
  damaged_crop_count:"നാശം സംഭവിച്ച വിളകളുടെ എണ്ണം",damage_details:"കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ",
  latitude:"Latitude",longitude:"Longitude",witness_names:"സാക്ഷിയുടെ പേര്",witness_numbers:"സാക്ഷിയുടെ നമ്പർ",
  officer_name:"പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ",area:"വിസ്തീർണ്ണം",compensation_amount:"നഷ്ടപരിഹാര തുക"
 };
+function cropDetailsHtml(value){
+  if(!value) return "";
+  const parts=String(value).split(",").map(x=>x.trim()).filter(Boolean);
+  return parts.map(x=>{
+    const m=x.match(/^(.+?)\s*[–-]\s*(.+?)\s*[–-]\s*(\d+)\s*എണ്ണം$/);
+    if(m) return '<div class="detail"><b>🌾 വിള</b>'+esc(m[1])+'<br><b>അവസ്ഥ</b>'+esc(m[2])+'<br><b>എണ്ണം</b>'+esc(m[3])+' എണ്ണം</div>';
+    return '<div class="detail"><b>🌾 വിള</b>'+esc(x)+'</div>';
+  }).join("");
+}
+
 window.openCase=async function(id){
   const {data,error}=await db.from("compensation_cases").select("*").eq("id",id).single();
   if(error){alert(error.message);return} currentCase=data;
   show($("reportCard"),false);show($("editCard"),false);show($("detailsCard"),true);
   let h='<div class="detailgrid">';
-  Object.keys(labels).forEach(k=>{ if(data[k]!==null && data[k]!==undefined && data[k]!=="") h+=`<div class="detail"><b>${labels[k]}</b>${esc(data[k])}</div>`;});
+  Object.keys(labels).forEach(k=>{
+    if(data[k]!==null && data[k]!==undefined && data[k]!==""){
+      if(k==="damaged_crops") h+=cropDetailsHtml(data[k]);
+      else h+=`<div class="detail"><b>${labels[k]}</b>${esc(data[k])}</div>`;
+    }
+  });
   h+='</div>'; $("details").innerHTML=h;
   $("photoBox").innerHTML="";
   if(data.photo_name){
@@ -187,7 +202,7 @@ window.startEdit=async function(id){
     ["applicant_address","അപേക്ഷകന്റെ വിലാസം","textarea"],["age","വയസ്സ്","number"],["mobile","മൊബൈൽ നമ്പർ","text"],
     ["damage_location","കൃഷിനാശം സംഭവിച്ച സ്ഥലം","text"],["wild_animal","വന്യമൃഗം","text"],
     ["gun_license","Gun ലൈസൻസ്","select"],["forest_crime_accused","വന കുറ്റകൃത്യത്തിൽ പ്രതിയാണോ","select"],
-    ["damaged_crops","നാശം സംഭവിച്ച വിളകൾ","textarea"],["damaged_crop_count","നാശം സംഭവിച്ച വിളകളുടെ എണ്ണം","number"],
+    ["damaged_crops","🌾 നാശം സംഭവിച്ച വിളകളുടെ വിശദാംശങ്ങൾ (വിള – അവസ്ഥ – എണ്ണം)","textarea"],["damaged_crop_count","നാശം സംഭവിച്ച വിളകളുടെ എണ്ണം","number"],
     ["damage_details","കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ","textarea"],["latitude","Latitude","text"],["longitude","Longitude","text"],
     ["witness_names","സാക്ഷിയുടെ പേര്","text"],["witness_numbers","സാക്ഷിയുടെ നമ്പർ","text"],
     ["officer_name","പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ","text"],["area","വിസ്തീർണ്ണം","text"],["compensation_amount","നഷ്ടപരിഹാര തുക","number"]
