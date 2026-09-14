@@ -49,6 +49,7 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 
 <label>അപേക്ഷ നമ്പർ (Application No.) <span style="color:#b00020">*</span></label>
 <input id="application_no" type="text" required placeholder="അപേക്ഷ നമ്പർ നൽകുക">
+<div id="applicationNoStatus" class="small" style="margin-top:7px;min-height:18px"></div>
 
 <label>അപേക്ഷകന്റെ പേര് <span style="color:#b00020">*</span></label>
 <input id="applicant_name" type="text" required>
@@ -83,15 +84,15 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 
 <label>സ്ഥലത്തിന്റെ ഫോട്ടോ</label>
 <div class="photo-box">
-<input id="photo" type="file" accept="image/*" capture="environment">
+<input id="photo" type="file" accept="image/*">
 <div class="small">ഫോട്ടോ എടുക്കുകയോ തിരഞ്ഞെടുക്കുകയോ ചെയ്യാം</div>
 </div>
 
-<label>സാക്ഷികളുടെ പേര്</label><input id="witness_names" type="text">
-<label>സാക്ഷികളുടെ മൊബൈൽ നമ്പർ</label><input id="witness_numbers" type="tel">
-<label>പരിശോധന നടത്തിയ ഉദ്യോഗസ്ഥന്റെ പേര്</label><input id="officer_name" type="text">
-<label>സ്ഥലത്തിന്റെ ഏകദേശം വിസ്തീർണ്ണം</label><input id="area" type="text" placeholder="ഉദാ: 0.50 ഏക്കർ">
-<label>ഏകദേശ നഷ്ടപരിഹാര തുക</label><input id="compensation_amount" type="number" min="0" step="0.01" placeholder="₹">
+<label>സാക്ഷിയുടെ പേര്</label><input id="witness_names" type="text">
+<label>സാക്ഷിയുടെ നമ്പർ</label><input id="witness_numbers" type="tel">
+<label>പരിശോധന ഉദ്യോഗസ്ഥൻ</label><input id="officer_name" type="text">
+<label>വിസ്തീർണ്ണം</label><input id="area" type="text" placeholder="ഉദാ: 0.50 ഏക്കർ">
+<label>നഷ്ടപരിഹാര തുക</label><input id="compensation_amount" type="number" min="0" step="0.01" placeholder="₹">
 
 <button class="primary" type="submit">💾 SAVE</button>
 <div id="status"></div>
@@ -113,11 +114,69 @@ function val(id){
   return el ? el.value.trim() : "";
 }
 
+
+let applicationNoExists = false;
+let applicationNoTimer = null;
+
+async function checkApplicationNumber() {
+  const field = document.getElementById("application_no");
+  const box = document.getElementById("applicationNoStatus");
+  const no = field.value.trim();
+
+  applicationNoExists = false;
+  box.textContent = "";
+
+  if (!no) return;
+
+  box.textContent = "Checking...";
+  clearTimeout(applicationNoTimer);
+
+  applicationNoTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(SUPABASE_URL + "/rest/v1/rpc/check_application_no", {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ p_application_no: no })
+      });
+
+      if (!res.ok) {
+        box.textContent = "";
+        return;
+      }
+
+      const exists = await res.json();
+      applicationNoExists = exists === true;
+
+      if (applicationNoExists) {
+        box.innerHTML = '⚠️ <strong style="color:#9b2020">ഈ അപേക്ഷ നമ്പർ ഇതിനകം നിലവിലുണ്ട്.</strong> വേറെ നമ്പർ നൽകുക.';
+      } else {
+        box.innerHTML = '✅ <span style="color:#176b45">അപേക്ഷ നമ്പർ ലഭ്യമാണ്.</span>';
+      }
+    } catch (err) {
+      box.textContent = "";
+    }
+  }, 250);
+}
+
+document.getElementById("application_no").addEventListener("blur", checkApplicationNumber);
+document.getElementById("application_no").addEventListener("change", checkApplicationNumber);
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   statusBox.style.display = "block";
   statusBox.className = "";
   statusBox.textContent = "Saving...";
+
+  await checkApplicationNumber();
+  if (applicationNoExists) {
+    statusBox.className = "error";
+    statusBox.innerHTML = "⚠️ <strong>ഈ അപേക്ഷ നമ്പർ ഇതിനകം നിലവിലുണ്ട്.</strong><br>വേറെ അപേക്ഷ നമ്പർ നൽകുക.";
+    return;
+  }
 
   const data = {
     application_no: val("application_no"),
