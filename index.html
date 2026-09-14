@@ -35,6 +35,7 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 .linkbox{word-break:break-all;background:#f2f6f4;padding:10px;border-radius:8px;font-size:13px}.admin-box{margin-top:18px;padding:15px;border:1px solid #d5e0db;border-radius:12px;background:#f8fbf9}.admin-box h3{margin:0 0 10px;color:#176b45;font-size:17px}
 @media(max-width:600px){.row,.search-row{grid-template-columns:1fr}.card{padding:16px}}
 </style>
+<style id="crop-row-style">.crop-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid #d5e0db;border-radius:10px;background:#f8fbf9}.crop-row button{padding:5px 10px;background:#fdeaea;color:#9b2020;border:0;border-radius:8px;font-size:18px}</style>
 </head>
 
 <body>
@@ -48,8 +49,8 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 
 <form id="compensationForm">
 
-<label for="application_no">1. അപേക്ഷ നമ്പർ <span class="required">*</span></label>
-<input id="application_no" name="application_no" type="text" inputmode="numeric" minlength="4" pattern="[0-9]{4,}" required placeholder="കുറഞ്ഞത് 4 അക്കങ്ങൾ">
+<label for="application_no">1. അപേക്ഷ നമ്പർ</label>
+<input id="application_no" name="application_no" type="text" inputmode="numeric" minlength="4" pattern="[0-9]{4,}" placeholder="നൽകുന്നെങ്കിൽ കുറഞ്ഞത് 4 അക്കങ്ങൾ">
 <div id="applicationNoStatus" class="small" style="margin-top:6px"></div>
 
 <label for="applicant_name">2. അപേക്ഷകന്റെ പേര് <span class="required">*</span></label>
@@ -101,11 +102,15 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 <option>കായ്ച്ചത്</option><option>കുലച്ചത്</option><option>പഴുത്തത്</option>
 <option>വളർച്ചയിൽ</option><option>പൂവിട്ടത്</option><option>തൈ/ചെടി</option>
 </select>
+<input id="cropCountInput" type="number" min="1" step="1" inputmode="numeric" placeholder="എണ്ണം (ഉദാ: 4)" style="margin-top:8px">
 <button type="button" id="addCropBtn" style="margin-top:8px">＋ വിള ചേർക്കുക</button>
-<div id="cropTags" style="display:flex;flex-wrap:wrap;gap:7px;margin-top:9px"></div>
+<div id="cropTags" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>
 <input id="cropAdditional" type="text" placeholder="Additional crop/type ഇവിടെ ടൈപ്പ് ചെയ്യാം" style="margin-top:8px">
 <input type="hidden" id="damagedCropsHidden" name="damaged_crops">
 </div>
+
+<label for="damaged_crop_count">11. ആകെ നാശം സംഭവിച്ച വിളകളുടെ എണ്ണം</label>
+<input id="damaged_crop_count" name="damaged_crop_count" type="number" min="0" step="1" inputmode="numeric" placeholder="ആകെ എണ്ണം">
 
 <label for="damaged_crop_count">11. നാശം സംഭവിച്ച വിളകളുടെ എണ്ണം</label>
 <input id="damaged_crop_count" name="damaged_crop_count" type="number" min="0" step="1" inputmode="numeric" placeholder="എണ്ണം">
@@ -161,6 +166,36 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 </form>
 </div>
 </main>
+<script id="crop-selector-script">
+document.addEventListener("DOMContentLoaded", function(){
+  const select=document.getElementById("cropSelect"), stage=document.getElementById("cropStage"), count=document.getElementById("cropCountInput");
+  const add=document.getElementById("addCropBtn"), tags=document.getElementById("cropTags"), extra=document.getElementById("cropAdditional"), hidden=document.getElementById("damagedCropsHidden");
+  if(!select||!stage||!count||!add||!tags||!hidden) return;
+  const crops=[];
+  function render(){
+    tags.innerHTML="";
+    crops.forEach((x,i)=>{
+      const row=document.createElement("div"); row.className="crop-row";
+      row.innerHTML='<span><strong>'+x.crop+'</strong> – '+x.stage+' – <strong>'+x.count+'</strong> എണ്ണം</span><button type="button" data-i="'+i+'">×</button>';
+      tags.appendChild(row);
+    });
+    const additional=extra&&extra.value.trim()? ["Additional: "+extra.value.trim()] : [];
+    hidden.value=crops.map(x=>x.crop+" – "+x.stage+" – "+x.count+" എണ്ണം").concat(additional).join(", ");
+    const total=crops.reduce((s,x)=>s+Number(x.count||0),0);
+    const totalEl=document.getElementById("damaged_crop_count"); if(totalEl) totalEl.value=total||"";
+  }
+  add.addEventListener("click",function(){
+    const c=select.value,s=stage.value,n=count.value.trim();
+    if(!c) return alert("വിള തിരഞ്ഞെടുക്കുക.");
+    if(!s) return alert("വിളയുടെ അവസ്ഥ തിരഞ്ഞെടുക്കുക.");
+    if(!n || Number(n)<1) return alert("വിളയുടെ എണ്ണം നൽകുക.");
+    crops.push({crop:c,stage:s,count:Number(n)}); render();
+    select.value=""; stage.value=""; count.value="";
+  });
+  tags.addEventListener("click",function(e){ if(e.target.dataset.i!==undefined){ crops.splice(Number(e.target.dataset.i),1); render(); }});
+  extra?.addEventListener("input",render); render();
+});
+</script>
 <script>
 const SUPABASE_URL = "https://jrccmucxwgebdurcokix.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-IbSEjr2Nn_TpO-jRAujUQ_q-kugYET";
@@ -281,7 +316,18 @@ form.addEventListener("submit", async (e)=>{
   e.preventDefault();
   setStatus("", "Saving...");
 
-  const exists = await checkApplicationNumber(false);
+  const appNo = val("application_no");
+  if(appNo && !/^\d{4,}$/.test(appNo)){
+    setStatus("error","⚠️ <strong>അപേക്ഷ നമ്പർ നൽകുന്നെങ്കിൽ കുറഞ്ഞത് 4 അക്കങ്ങൾ വേണം.</strong>");
+    document.getElementById("application_no").focus(); return;
+  }
+  const gun = (document.querySelector('input[name="gun_license"]:checked')||{}).value || "";
+  const forest = (document.querySelector('input[name="forest_crime_accused"]:checked')||{}).value || "";
+  if(gun === "ഉണ്ട്" || forest === "ഉണ്ട്"){
+    setStatus("error","❌ <strong>ഈ സാഹചര്യത്തിൽ അപേക്ഷ സമർപ്പിക്കാൻ കഴിയില്ല.</strong><br>Gun ലൈസൻസ് / വന സംബന്ധമായ കുറ്റകൃത്യ വിവരം പരിശോധിക്കുക.");
+    return;
+  }
+  const exists = appNo ? await checkApplicationNumber(false) : false;
   if(exists){
     setStatus("error",
       "⚠️ <strong>ഈ അപേക്ഷ നമ്പർ ഇതിനകം നിലവിലുണ്ട്.</strong><br>വേറെ അപേക്ഷ നമ്പർ നൽകുക.");
@@ -289,15 +335,15 @@ form.addEventListener("submit", async (e)=>{
   }
 
   const data={
-    application_no:val("application_no"),
+    application_no:appNo || null,
     applicant_name:val("applicant_name"),
     applicant_address:val("applicant_address"),
     age:val("age") ? Number(val("age")) : null,
     mobile:val("mobile"),
     damage_location:val("damage_location"),
     wild_animal:val("wild_animal"),
-    gun_license:(document.querySelector('input[name="gun_license"]:checked')||{}).value || "",
-    forest_crime_accused:(document.querySelector('input[name="forest_crime_accused"]:checked')||{}).value || "",
+    gun_license:gun,
+    forest_crime_accused:forest,
     damaged_crops:val("damaged_crops"),
     damaged_crop_count:val("damaged_crop_count") ? Number(val("damaged_crop_count")) : null,
     damage_details:val("damage_details"),
