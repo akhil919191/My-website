@@ -35,6 +35,91 @@ small{color:#666}
   .success{background:#e7f8ef!important;color:#12633f!important;border:1px solid #a9dfc4!important;padding:10px!important;border-radius:10px!important}
   .error{background:#fff0f1!important;color:#a32934!important;border:1px solid #f0b7bd!important;padding:10px!important;border-radius:10px!important}
 </style>
+
+<style>
+:root{
+  --primary:#155eef;
+  --primary2:#0b3b91;
+  --ink:#10233f;
+  --muted:#667085;
+  --bg:#f4f7fb;
+  --card:#ffffff;
+  --line:#e6ebf2;
+  --danger:#d92d20;
+  --success:#039855;
+}
+body{
+  background:
+    radial-gradient(circle at 10% 0%, rgba(21,94,239,.10), transparent 28%),
+    radial-gradient(circle at 90% 10%, rgba(16,185,129,.08), transparent 25%),
+    var(--bg) !important;
+  color:var(--ink) !important;
+}
+header,.header,.topbar{
+  background:linear-gradient(135deg,var(--primary2),var(--primary)) !important;
+  box-shadow:0 8px 28px rgba(16,43,88,.18) !important;
+}
+button{
+  border-radius:12px !important;
+  font-weight:700 !important;
+  transition:.18s ease !important;
+}
+button:hover{transform:translateY(-1px);filter:brightness(1.03)}
+input,textarea,select{
+  border:1px solid #d9e1ec !important;
+  border-radius:12px !important;
+  background:#fff !important;
+}
+.card,.case,.application,.login-card,.modal-content{
+  border:1px solid var(--line) !important;
+  border-radius:18px !important;
+  box-shadow:0 8px 30px rgba(16,35,63,.07) !important;
+  background:rgba(255,255,255,.98) !important;
+}
+.stat-card{
+  border-radius:18px !important;
+  padding:18px !important;
+  background:linear-gradient(135deg,#fff,#f7faff) !important;
+  border:1px solid #e3eaf5 !important;
+  box-shadow:0 8px 24px rgba(16,35,63,.06) !important;
+}
+.badge,.status,.pill{
+  border-radius:999px !important;
+  font-weight:700 !important;
+}
+.modal,.overlay{
+  backdrop-filter:blur(5px) !important;
+}
+.case-list,.applications{
+  gap:14px !important;
+}
+.case-item,.application-item{
+  border:1px solid #e4eaf2 !important;
+  border-radius:16px !important;
+  background:#fff !important;
+  box-shadow:0 5px 18px rgba(16,35,63,.05) !important;
+  padding:16px !important;
+}
+.case-item:hover,.application-item:hover{
+  border-color:#b9cdf6 !important;
+  box-shadow:0 10px 26px rgba(21,94,239,.10) !important;
+}
+h1,h2,h3{letter-spacing:-.02em}
+img{
+  border-radius:14px !important;
+  max-width:100% !important;
+  object-fit:cover !important;
+}
+@media(max-width:600px){
+  body{font-size:14px !important}
+  .container,main{padding-left:12px !important;padding-right:12px !important}
+  h1{font-size:23px !important}
+  h2{font-size:19px !important}
+  button{min-height:44px !important}
+  input,textarea,select{min-height:44px !important}
+  .case-item,.application-item{padding:13px !important}
+}
+</style>
 </head>
 <body>
 <h1>Compensation — Admin</h1>
