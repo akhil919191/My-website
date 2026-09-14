@@ -2,257 +2,171 @@
 <html lang="ml">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>Compensation — Admin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Compensation - Verification Report</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,"Noto Sans Malayalam",sans-serif;background:linear-gradient(135deg,#eef4ff,#f4fbf8);color:#10233f}
-.wrap{max-width:920px;margin:auto;padding:16px}
-.header{background:linear-gradient(135deg,#123d8d,#176f62);color:white;padding:20px;border-radius:20px;margin-bottom:14px;box-shadow:0 10px 30px #10233f25}
-.header h1{margin:0 0 5px;font-size:24px}.header p{margin:0;opacity:.9}
-.card{background:#fff;border:1px solid #e4eaf2;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 7px 25px #10233f10}
-h2,h3{margin-top:0}
-input,textarea,select{width:100%;padding:12px;border:1px solid #d7dfeb;border-radius:12px;margin:6px 0 12px;font-size:15px}
-button{border:0;border-radius:12px;padding:12px 16px;font-weight:800;font-size:15px;cursor:pointer}
-.primary{background:#155eef;color:#fff}.green{background:#087f5b;color:#fff}.danger{background:#d92d20;color:#fff}.light{background:#eef3fa;color:#10233f}
-.row{border:1px solid #e1e7f0;border-radius:16px;padding:14px;margin:10px 0;background:#fff}
-.row:hover{box-shadow:0 8px 22px #155eef12;border-color:#b9cdf6}
-.rowhead{display:flex;justify-content:space-between;gap:10px;align-items:center}
-.num{font-size:18px;font-weight:900}.name{font-size:16px;margin-top:3px}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.actions button{flex:1;min-width:110px}
-.hidden{display:none!important}.msg{padding:10px;border-radius:10px;margin-top:8px}
-.ok{background:#e9f8f0;color:#12633f}.err{background:#fff0f1;color:#a32934}
-.detailgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.detail{background:#f7f9fc;border-radius:12px;padding:11px}.detail b{display:block;font-size:12px;color:#667085;margin-bottom:4px}.crop-detail{margin-bottom:8px}
-.photo{width:100%;max-height:430px;object-fit:contain;border-radius:14px;background:#eef2f6;margin-top:10px}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap}
-.toolbar button{flex:1;min-width:130px}
-@media(max-width:650px){.wrap{padding:10px}.detailgrid{grid-template-columns:1fr}.header{padding:16px}.actions button,.toolbar button{min-height:44px}}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#eef5ff,#f4fbf7);font-family:Arial,"Noto Sans Malayalam",sans-serif;color:#14243a}
+.wrap{max-width:900px;margin:auto;padding:12px}.head{background:linear-gradient(135deg,#123d8d,#16745d);color:#fff;border-radius:18px;padding:18px;margin-bottom:12px}
+.head h1{margin:0;font-size:23px}.head p{margin:5px 0 0;opacity:.9}.card{background:#fff;border:1px solid #e3e9f1;border-radius:17px;padding:15px;margin-bottom:12px;box-shadow:0 6px 22px #10233f10}
+input,textarea,select{width:100%;padding:11px;border:1px solid #d5deea;border-radius:11px;font-size:15px;margin:5px 0 10px}label{font-weight:700;font-size:13px}
+button{border:0;border-radius:10px;padding:9px 12px;font-weight:800;font-size:13px;cursor:pointer}
+.primary{background:#155eef;color:#fff}.green{background:#087f5b;color:#fff}.danger{background:#d92d20;color:#fff}.light{background:#edf2f8;color:#15253b}
+.toolbar{display:flex;gap:7px;flex-wrap:wrap}.toolbar button{min-width:100px}.hidden{display:none!important}
+.item{border:1px solid #e0e7f0;border-radius:14px;padding:12px;margin:9px 0}.itemtop{display:flex;justify-content:space-between;gap:8px}.appno{font-size:17px;font-weight:900}.name{font-size:15px;margin-top:3px}
+.small-actions{display:flex;gap:6px;margin-top:9px}.small-actions button{padding:7px 10px;font-size:12px;min-width:70px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.detail{background:#f7f9fc;border-radius:10px;padding:9px;font-size:14px}.detail b{display:block;color:#667085;font-size:11px;margin-bottom:3px}
+.crop{background:#edf6ff;border:1px solid #cfe1fb;border-radius:10px;padding:9px;margin:6px 0}.crop b{color:#174a8b}
+.photo{width:100%;max-height:400px;object-fit:contain;border-radius:12px;background:#f0f3f6;margin-top:8px}
+.msg{padding:9px;border-radius:9px;margin-top:8px}.ok{background:#eaf8f0;color:#12633f}.err{background:#fff0f1;color:#9f2630}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.wrap{padding:9px}.head{padding:15px}.small-actions{gap:5px}.small-actions button{min-width:64px;padding:7px 8px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="header">
-    <h1>📋 Compensation — Admin</h1>
-    <p>Verification Report</p>
-  </div>
+<div class="head"><h1>📋 Compensation Admin</h1><p>Verification Report</p></div>
 
-  <div class="card" id="loginCard">
-    <h2>🔐 Admin Login</h2>
-    <input id="email" type="email" placeholder="Admin email" autocomplete="username">
-    <input id="password" type="password" placeholder="Password" autocomplete="current-password">
-    <button class="primary" id="loginBtn">Login</button>
-    <div id="loginMsg"></div>
-  </div>
+<div id="loginCard" class="card">
+<h2>🔐 Admin Login</h2>
+<input id="email" type="email" placeholder="Admin email" autocomplete="username">
+<input id="password" type="password" placeholder="Password" autocomplete="current-password">
+<button id="loginBtn" class="primary">Login</button><div id="loginMsg"></div>
+</div>
 
-  <div id="adminArea" class="hidden">
-    <div class="card">
-      <div class="toolbar">
-        <button class="primary" id="reportBtn">📋 Verification Report</button>
-        <button class="light" id="logoutBtn">🚪 Logout</button>
-      </div>
-    </div>
+<div id="app" class="hidden">
+<div class="card"><div class="toolbar">
+<button id="reportBtn" class="primary">📋 Verification Report</button>
+<button id="logoutBtn" class="light">🚪 Logout</button>
+</div></div>
 
-    <div class="card hidden" id="reportCard">
-      <h2>📋 Verification Report</h2>
-      <input id="search" placeholder="🔎 Application No. / Applicant Name search">
-      <div id="list">Report തുറക്കാൻ button അമർത്തുക.</div>
-    </div>
+<div id="reportCard" class="card hidden">
+<h2>📋 Verification Report</h2>
+<input id="search" placeholder="🔎 അപേക്ഷ നമ്പർ / അപേക്ഷകന്റെ പേര്">
+<div id="list"></div>
+</div>
 
-    <div class="card hidden" id="detailsCard">
-      <div class="toolbar">
-        <button class="light" id="backBtn">← Back</button>
-        <button class="primary" id="editBtn">✏️ Edit</button>
-        <button class="danger" id="deleteBtn">🗑️ Delete</button>
-      </div>
-      <hr>
-      <h2>Application Details</h2>
-      <div id="details"></div>
-      <div id="photoBox"></div>
-      <h3 style="margin-top:18px">💬 Comment / Remarks</h3>
-      <textarea id="comment" rows="4" placeholder="Remarks എഴുതുക"></textarea>
-      <button class="green" id="saveCommentBtn">Save Comment</button>
-      <div id="commentMsg"></div>
-      <div id="commentsList" style="margin-top:10px"></div>
-    </div>
+<div id="detailCard" class="card hidden">
+<div class="toolbar"><button id="backBtn" class="light">← Back</button><button id="editBtn" class="primary">✏️ Edit</button><button id="deleteBtn" class="danger">🗑️ Delete</button></div>
+<hr><h2>Application Details</h2><div id="details"></div><div id="photoBox"></div>
+<h3>💬 Remarks</h3><textarea id="comment" rows="3" placeholder="Remarks എഴുതുക"></textarea><button id="commentBtn" class="green">Save Comment</button><div id="commentMsg"></div><div id="comments"></div>
+</div>
 
-    <div class="card hidden" id="editCard">
-      <h2>✏️ Edit Application</h2>
-      <div id="cropEditHint" style="background:#eef6ff;border-radius:12px;padding:10px;margin-bottom:10px;color:#174a8b;font-weight:700">🌾 വിളയുടെ വിശദാംശങ്ങൾ: വിള – അവസ്ഥ – എണ്ണം എന്ന രീതിയിൽ തിരുത്താം.</div><div id="editForm"></div>
-      <div class="toolbar">
-        <button class="green" id="updateBtn">Save Changes</button>
-        <button class="light" id="cancelEditBtn">Cancel</button>
-      </div>
-      <div id="editMsg"></div>
-    </div>
-  </div>
+<div id="editCard" class="card hidden">
+<h2>✏️ Edit Application</h2><div id="editForm"></div>
+<div class="toolbar"><button id="updateBtn" class="green">Save Changes</button><button id="cancelBtn" class="light">Cancel</button></div><div id="editMsg"></div>
+</div>
+</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL="https://jrccmucxwgebdurcokix.supabase.co";
-const SUPABASE_KEY="sb_publishable_-IbSEjr2Nn_TpO-jRAujUQ_q-kugYET";
-const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let cases=[], currentCase=null;
-
+const URL="https://jrccmucxwgebdurcokix.supabase.co";
+const KEY="sb_publishable_-IbSEjr2Nn_TpO-jRAujUQ_q-kugYET";
+const db=supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+let rows=[],current=null,initialized=false;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+const show=(id,on)=>$(id).classList.toggle("hidden",!on);
+function message(id,s,ok=false){$(id).innerHTML=s?'<div class="msg '+(ok?'ok':'err')+'">'+esc(s)+'</div>':''}
 
-function show(el,on=true){el.classList.toggle("hidden",!on)}
-function msg(id,text,ok=false){$(id).innerHTML=text?'<div class="msg '+(ok?'ok':'err')+'">'+esc(text)+'</div>':''}
-
-async function applySession(session){
-  const logged=!!session;
-  show($("loginCard"),!logged);
-  show($("adminArea"),logged);
-  if(!logged){
-    show($("reportCard"),false); show($("detailsCard"),false); show($("editCard"),false);
-    cases=[]; currentCase=null;
-  }
+function cropHTML(v){
+ if(!v)return '<div class="detail"><b>🌾 വിളകളുടെ വിവരങ്ങൾ</b>ലഭ്യമല്ല</div>';
+ let arr=String(v).split(",").map(x=>x.trim()).filter(Boolean), h='<div class="detail"><b>🌾 നാശം സംഭവിച്ച വിളകളുടെ വിവരങ്ങൾ</b>';
+ arr.forEach(x=>{
+   let m=x.match(/^(.+?)\s*[–-]\s*(.+?)\s*[–-]\s*(\d+)\s*എണ്ണം$/);
+   h+=m?'<div class="crop"><b>'+esc(m[1])+'</b> — '+esc(m[2])+' — <b>'+esc(m[3])+' എണ്ണം</b></div>':'<div class="crop">'+esc(x)+'</div>';
+ });
+ return h+'</div>';
 }
-async function init(){
-  const {data}=await db.auth.getSession();
-  await applySession(data.session);
-}
-$("loginBtn").onclick=async()=>{
-  msg("loginMsg","Logging in...",true);
-  const {data,error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
-  if(error){msg("loginMsg",error.message);return}
-  msg("loginMsg","Login successful",true); await applySession(data.session);
-};
-$("logoutBtn").onclick=async()=>{await db.auth.signOut();};
-db.auth.onAuthStateChange((_event,session)=>applySession(session));
 
+async function hardLoginGate(){
+ // IMPORTANT: Supabase normally remembers the previous login.
+ // Force a fresh login whenever admin.html is opened.
+ try{await db.auth.signOut({scope:"local"});}catch(e){}
+ show("loginCard",true);show("app",false);show("reportCard",false);show("detailCard",false);show("editCard",false);
+ initialized=true;
+}
+async function login(){
+ message("loginMsg","Login ചെയ്യുന്നു...",true);
+ const {data,error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+ if(error){message("loginMsg",error.message);return}
+ show("loginCard",false);show("app",true);message("loginMsg","");
+}
+$("loginBtn").onclick=login;
+$("password").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
+
+db.auth.onAuthStateChange((_event,session)=>{
+ if(!initialized)return;
+ if(!session){show("loginCard",true);show("app",false);show("reportCard",false);show("detailCard",false);show("editCard",false);}
+});
+
+$("logoutBtn").onclick=async()=>{await db.auth.signOut({scope:"local"});};
 $("reportBtn").onclick=async()=>{
-  if(!(await db.auth.getSession()).data.session){await db.auth.signOut();return}
-  show($("reportCard"),true); show($("detailsCard"),false); show($("editCard"),false);
-  await loadCases();
+ const {data}=await db.auth.getSession(); if(!data.session){await hardLoginGate();return}
+ show("reportCard",true);show("detailCard",false);show("editCard",false);await loadRows();
 };
+async function loadRows(){
+ $("list").textContent="Loading...";
+ const {data,error}=await db.from("compensation_cases").select("*").order("created_at",{ascending:true});
+ if(error){$("list").innerHTML='<div class="msg err">'+esc(error.message)+'</div>';return}
+ rows=data||[];render(rows);
+}
+function render(list){
+ if(!list.length){$("list").textContent="No applications found.";return}
+ $("list").innerHTML=list.map((r,i)=>`<div class="item">
+ <div class="itemtop"><div><div class="appno">${i+1}. ${esc(r.application_no||"Application No. ഇല്ല")}</div><div class="name">${esc(r.applicant_name||"")}</div></div></div>
+ <div class="small-actions"><button class="primary" onclick="openCase('${r.id}')">Open</button><button class="light" onclick="editCase('${r.id}')">✏️ Edit</button><button class="danger" onclick="removeCase('${r.id}')">🗑️ Delete</button></div>
+ </div>`).join("");
+}
+$("search").oninput=function(){let q=this.value.toLowerCase().trim();render(rows.filter(r=>String(r.application_no||"").toLowerCase().includes(q)||String(r.applicant_name||"").toLowerCase().includes(q)))};
 
-async function loadCases(){
-  $("list").textContent="Loading...";
-  const {data,error}=await db.from("compensation_cases").select("*").order("created_at",{ascending:true});
-  if(error){$("list").innerHTML='<div class="msg err">'+esc(error.message)+'</div>';return}
-  cases=data||[]; renderCases(cases);
-}
-function renderCases(rows){
-  if(!rows.length){$("list").textContent="No applications found.";return}
-  $("list").innerHTML=rows.map((r,i)=>`
-    <div class="row" data-id="${esc(r.id)}">
-      <div class="rowhead"><div><div class="num">${i+1}. ${esc(r.application_no||"Application No. ഇല്ല")}</div><div class="name">${esc(r.applicant_name)}</div></div></div>
-      <div class="actions">
-        <button class="primary" onclick="openCase('${r.id}')">Open</button>
-        <button class="light" onclick="startEdit('${r.id}')">✏️ Edit</button>
-        <button class="danger" onclick="deleteCase('${r.id}')">🗑️ Delete</button>
-      </div>
-    </div>`).join("");
-}
-$("search").oninput=function(){
-  const q=this.value.trim().toLowerCase();
-  renderCases(cases.filter(r=>String(r.application_no||"").toLowerCase().includes(q)||String(r.applicant_name||"").toLowerCase().includes(q)));
-};
-
-const labels={
- application_no:"അപേക്ഷ നമ്പർ",applicant_name:"അപേക്ഷകന്റെ പേര്",applicant_address:"അപേക്ഷകന്റെ വിലാസം",
- age:"വയസ്സ്",mobile:"മൊബൈൽ നമ്പർ",damage_location:"കൃഷിനാശം സംഭവിച്ച സ്ഥലം",
- wild_animal:"കൃഷിനാശം വരുത്തിയ വന്യമൃഗം",gun_license:"Gun ലൈസൻസ്",
- forest_crime_accused:"വന സംബന്ധമായ കുറ്റകൃത്യങ്ങളിൽ പ്രതിയാണോ",damaged_crops:"🌾 നാശം സംഭവിച്ച വിളകളുടെ വിശദാംശങ്ങൾ",
- damaged_crop_count:"നാശം സംഭവിച്ച വിളകളുടെ എണ്ണം",damage_details:"കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ",
- latitude:"Latitude",longitude:"Longitude",witness_names:"സാക്ഷിയുടെ പേര്",witness_numbers:"സാക്ഷിയുടെ നമ്പർ",
- officer_name:"പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ",area:"വിസ്തീർണ്ണം",compensation_amount:"നഷ്ടപരിഹാര തുക"
-};
-function cropDetailsHtml(value){
-  if(!value) return "";
-  const parts=String(value).split(",").map(x=>x.trim()).filter(Boolean);
-  return parts.map(x=>{
-    const m=x.match(/^(.+?)\s*[–-]\s*(.+?)\s*[–-]\s*(\d+)\s*എണ്ണം$/);
-    if(m) return '<div class="detail"><b>🌾 വിള</b>'+esc(m[1])+'<br><b>അവസ്ഥ</b>'+esc(m[2])+'<br><b>എണ്ണം</b>'+esc(m[3])+' എണ്ണം</div>';
-    return '<div class="detail"><b>🌾 വിള</b>'+esc(x)+'</div>';
-  }).join("");
-}
+const labels={application_no:"അപേക്ഷ നമ്പർ",applicant_name:"അപേക്ഷകന്റെ പേര്",applicant_address:"അപേക്ഷകന്റെ വിലാസം",age:"വയസ്സ്",mobile:"മൊബൈൽ നമ്പർ",damage_location:"കൃഷിനാശം സംഭവിച്ച സ്ഥലം",wild_animal:"കൃഷിനാശം വരുത്തിയ വന്യമൃഗം",gun_license:"Gun ലൈസൻസ്",forest_crime_accused:"വന സംബന്ധമായ കുറ്റകൃത്യങ്ങളിൽ പ്രതിയാണോ",damage_details:"കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ",latitude:"GPS Latitude",longitude:"GPS Longitude",witness_names:"സാക്ഷിയുടെ പേര്",witness_numbers:"സാക്ഷിയുടെ നമ്പർ",officer_name:"പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ",area:"വിസ്തീർണ്ണം",compensation_amount:"നഷ്ടപരിഹാര തുക"};
 
 window.openCase=async function(id){
-  const {data,error}=await db.from("compensation_cases").select("*").eq("id",id).single();
-  if(error){alert(error.message);return} currentCase=data;
-  show($("reportCard"),false);show($("editCard"),false);show($("detailsCard"),true);
-  let h='<div class="detailgrid">';
-  Object.keys(labels).forEach(k=>{
-    if(data[k]!==null && data[k]!==undefined && data[k]!==""){
-      if(k==="damaged_crops") h+=cropDetailsHtml(data[k]);
-      else h+=`<div class="detail"><b>${labels[k]}</b>${esc(data[k])}</div>`;
-    }
-  });
-  h+='</div>'; $("details").innerHTML=h;
-  $("photoBox").innerHTML="";
-  if(data.photo_name){
-    const {data:p}=await db.storage.from("compensation-photos").createSignedUrl(data.photo_name,3600);
-    if(p?.signedUrl) $("photoBox").innerHTML='<h3 style="margin-top:18px">📷 സ്ഥലം ഫോട്ടോ</h3><img class="photo" src="'+esc(p.signedUrl)+'" alt="Photo">';
-  }
-  await loadComments(id);
+ const {data,error}=await db.from("compensation_cases").select("*").eq("id",id).single();if(error){alert(error.message);return}
+ current=data;show("reportCard",false);show("editCard",false);show("detailCard",true);
+ let h='<div class="grid">';
+ Object.keys(labels).forEach(k=>{if(data[k]!==null&&data[k]!==undefined&&data[k]!=="")h+='<div class="detail"><b>'+labels[k]+'</b>'+esc(data[k])+'</div>'});
+ h+=cropHTML(data.damaged_crops)+'</div>'; $("details").innerHTML=h;
+ $("photoBox").innerHTML="";
+ if(data.photo_name){const {data:p}=await db.storage.from("compensation-photos").createSignedUrl(data.photo_name,3600);if(p?.signedUrl)$("photoBox").innerHTML='<h3>📷 സ്ഥലം ഫോട്ടോ</h3><img class="photo" src="'+esc(p.signedUrl)+'">';}
+ await loadComments(id);
 };
-$("backBtn").onclick=()=>{show($("detailsCard"),false);show($("reportCard"),true);loadCases()};
-$("editBtn").onclick=()=>{if(currentCase) startEdit(currentCase.id)};
-window.startEdit=async function(id){
-  const c=cases.find(x=>x.id===id)||currentCase;
-  if(!c)return;
-  currentCase=c;
-  show($("reportCard"),false);show($("detailsCard"),false);show($("editCard"),true);
-  const fields=[
-    ["application_no","അപേക്ഷ നമ്പർ","text"],["applicant_name","അപേക്ഷകന്റെ പേര്","text"],
-    ["applicant_address","അപേക്ഷകന്റെ വിലാസം","textarea"],["age","വയസ്സ്","number"],["mobile","മൊബൈൽ നമ്പർ","text"],
-    ["damage_location","കൃഷിനാശം സംഭവിച്ച സ്ഥലം","text"],["wild_animal","വന്യമൃഗം","text"],
-    ["gun_license","Gun ലൈസൻസ്","select"],["forest_crime_accused","വന കുറ്റകൃത്യത്തിൽ പ്രതിയാണോ","select"],
-    ["damaged_crops","🌾 നാശം സംഭവിച്ച വിളകളുടെ വിശദാംശങ്ങൾ (വിള – അവസ്ഥ – എണ്ണം)","textarea"],
-    ["damage_details","കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ","textarea"],["latitude","Latitude","text"],["longitude","Longitude","text"],
-    ["witness_names","സാക്ഷിയുടെ പേര്","text"],["witness_numbers","സാക്ഷിയുടെ നമ്പർ","text"],
-    ["officer_name","പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ","text"],["area","വിസ്തീർണ്ണം","text"],["compensation_amount","നഷ്ടപരിഹാര തുക","number"]
-  ];
-  $("editForm").innerHTML=fields.map(([k,l,t])=>{
-    if(t==="textarea") return `<label>${l}</label><textarea id="e_${k}" rows="3">${esc(c[k]||"")}</textarea>`;
-    if(t==="select") return `<label>${l}</label><select id="e_${k}"><option value="">തിരഞ്ഞെടുക്കുക</option><option value="ഉണ്ട്" ${c[k]==="ഉണ്ട്"?"selected":""}>ഉണ്ട്</option><option value="ഇല്ല" ${c[k]==="ഇല്ല"?"selected":""}>ഇല്ല</option></select>`;
-    return `<label>${l}</label><input id="e_${k}" type="${t}" value="${esc(c[k]??"")}">`;
-  }).join("");
-};
-$("cancelEditBtn").onclick=()=>{show($("editCard"),false);show($("detailsCard"),true)};
-$("updateBtn").onclick=async()=>{
-  if(!currentCase)return;
-  const patch={};
-  ["application_no","applicant_name","applicant_address","age","mobile","damage_location","wild_animal","gun_license","forest_crime_accused","damaged_crops","damage_details","latitude","longitude","witness_names","witness_numbers","officer_name","area","compensation_amount"].forEach(k=>{
-    const el=$("e_"+k); if(el) patch[k]=el.value.trim()===""?null:el.value.trim();
-  });
-  if(patch.application_no && !/^\d{4,}$/.test(patch.application_no)){msg("editMsg","അപേക്ഷ നമ്പർ 4 അക്കമെങ്കിലും വേണം.");return}
-  if(!patch.officer_name){msg("editMsg","പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ നിർബന്ധമാണ്.");return}
-  if(patch.gun_license==="ഉണ്ട്"||patch.forest_crime_accused==="ഉണ്ട്"){msg("editMsg","ഈ അപേക്ഷ യോഗ്യമല്ല.");return}
-  const {error}=await db.from("compensation_cases").update(patch).eq("id",currentCase.id);
-  if(error){msg("editMsg",error.message);return}
-  Object.assign(currentCase,patch); msg("editMsg","Changes saved.",true);
-  await openCase(currentCase.id);
-};
-window.deleteCase=async function(id){
-  if(!(await db.auth.getSession()).data.session){alert("Please login first.");return}
-  const c=cases.find(x=>x.id===id);
-  if(!confirm("ഈ അപേക്ഷ delete ചെയ്യണോ? ഇത് തിരിച്ചെടുക്കാൻ കഴിയില്ല."))return;
-  if(c?.photo_name) await db.storage.from("compensation-photos").remove([c.photo_name]);
-  const {error}=await db.from("compensation_cases").delete().eq("id",id);
-  if(error){alert("Delete failed: "+error.message);return}
-  if(currentCase?.id===id){currentCase=null;show($("detailsCard"),false)}
-  await loadCases();
-};
+$("backBtn").onclick=()=>{show("detailCard",false);show("reportCard",true);loadRows()};
+$("editBtn").onclick=()=>current&&editCase(current.id);
 
-async function loadComments(id){
-  $("commentsList").textContent="Loading...";
-  const {data,error}=await db.from("compensation_comments").select("*").eq("case_id",id).order("created_at",{ascending:false});
-  if(error){$("commentsList").textContent="";return}
-  $("commentsList").innerHTML=(data||[]).map(c=>`<div class="row"><b>Remark</b><br>${esc(c.comment||c.remarks||"")}<br><small>${esc(c.created_at||"")}</small></div>`).join("")||"<small>No remarks.</small>";
-}
-$("saveCommentBtn").onclick=async()=>{
-  if(!currentCase)return;
-  const text=$("comment").value.trim();if(!text)return;
-  const {error}=await db.from("compensation_comments").insert({case_id:currentCase.id,comment:text});
-  if(error){msg("commentMsg",error.message);return}
-  $("comment").value="";msg("commentMsg","Comment saved.",true);loadComments(currentCase.id);
+window.editCase=async function(id){
+ const {data,error}=await db.from("compensation_cases").select("*").eq("id",id).single();if(error){alert(error.message);return}
+ current=data;show("reportCard",false);show("detailCard",false);show("editCard",true);
+ const f=[["application_no","അപേക്ഷ നമ്പർ","text"],["applicant_name","അപേക്ഷകന്റെ പേര്","text"],["applicant_address","അപേക്ഷകന്റെ വിലാസം","textarea"],["age","വയസ്സ്","number"],["mobile","മൊബൈൽ നമ്പർ","text"],["damage_location","കൃഷിനാശം സംഭവിച്ച സ്ഥലം","text"],["wild_animal","വന്യമൃഗം","text"],["gun_license","Gun ലൈസൻസ്","select"],["forest_crime_accused","വന കുറ്റകൃത്യങ്ങളിൽ പ്രതിയാണോ","select"],["damaged_crops","🌾 വിള – അവസ്ഥ – എണ്ണം","textarea"],["damage_details","കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ","textarea"],["latitude","GPS Latitude","text"],["longitude","GPS Longitude","text"],["witness_names","സാക്ഷിയുടെ പേര്","text"],["witness_numbers","സാക്ഷിയുടെ നമ്പർ","text"],["officer_name","പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ","text"],["area","വിസ്തീർണ്ണം","text"],["compensation_amount","നഷ്ടപരിഹാര തുക","number"]];
+ $("editForm").innerHTML=f.map(x=>x[2]==="textarea"?'<label>'+x[1]+'</label><textarea id="e_'+x[0]+'" rows="3">'+esc(data[x[0]]||"")+'</textarea>':x[2]==="select"?'<label>'+x[1]+'</label><select id="e_'+x[0]+'"><option value="">തിരഞ്ഞെടുക്കുക</option><option '+(data[x[0]]==="ഉണ്ട്"?"selected":"")+' value="ഉണ്ട്">ഉണ്ട്</option><option '+(data[x[0]]==="ഇല്ല"?"selected":"")+' value="ഇല്ല">ഇല്ല</option></select>':'<label>'+x[1]+'</label><input id="e_'+x[0]+'" type="'+x[2]+'" value="'+esc(data[x[0]]??"")+'">').join("");
 };
-init();
+$("cancelBtn").onclick=()=>{show("editCard",false);show("detailCard",true)};
+$("updateBtn").onclick=async()=>{
+ if(!current)return;let patch={};
+ ["application_no","applicant_name","applicant_address","age","mobile","damage_location","wild_animal","gun_license","forest_crime_accused","damaged_crops","damage_details","latitude","longitude","witness_names","witness_numbers","officer_name","area","compensation_amount"].forEach(k=>{let e=$("e_"+k);if(e)patch[k]=e.value.trim()===""?null:e.value.trim()});
+ if(patch.application_no&&!/^\\d{4,}$/.test(patch.application_no)){message("editMsg","അപേക്ഷ നമ്പർ നൽകിയാൽ കുറഞ്ഞത് 4 അക്കങ്ങൾ വേണം.");return}
+ if(!patch.officer_name){message("editMsg","പരിശോധിച്ച ഉദ്യോഗസ്ഥൻ നിർബന്ധമാണ്.");return}
+ if(patch.gun_license==="ഉണ്ട്"||patch.forest_crime_accused==="ഉണ്ട്"){message("editMsg","ഈ അപേക്ഷ സമർപ്പിക്കാൻ യോഗ്യമല്ല.");return}
+ const {error}=await db.from("compensation_cases").update(patch).eq("id",current.id);
+ if(error){message("editMsg",error.message);return}
+ current={...current,...patch};message("editMsg","Changes saved.",true);await openCase(current.id);
+};
+window.removeCase=async function(id){
+ const {data}=await db.auth.getSession();if(!data.session){await hardLoginGate();return}
+ if(!confirm("ഈ അപേക്ഷ delete ചെയ്യണോ? ഇത് തിരിച്ചെടുക്കാൻ കഴിയില്ല."))return;
+ const c=rows.find(x=>x.id===id);if(c?.photo_name)await db.storage.from("compensation-photos").remove([c.photo_name]);
+ const {error}=await db.from("compensation_cases").delete().eq("id",id);if(error){alert(error.message);return}
+ current=null;await loadRows();
+};
+async function loadComments(id){
+ const {data,error}=await db.from("compensation_comments").select("*").eq("case_id",id).order("created_at",{ascending:false});
+ if(error){$("comments").innerHTML="";return}
+ $("comments").innerHTML=(data||[]).map(c=>'<div class="item"><b>Remark</b><br>'+esc(c.comment||c.remarks||"")+'</div>').join("");
+}
+$("commentBtn").onclick=async()=>{if(!current)return;let v=$("comment").value.trim();if(!v)return;const {error}=await db.from("compensation_comments").insert({case_id:current.id,comment:v});if(error){message("commentMsg",error.message);return}$("comment").value="";message("commentMsg","Comment saved.",true);loadComments(current.id)};
+
+// Do this LAST: it prevents a remembered Supabase session from exposing data.
+hardLoginGate();
 </script>
 </body>
 </html>
