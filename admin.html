@@ -68,7 +68,16 @@ small{color:#666}
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+function renderPhoto(photoName){
+  if(!photoName) return "";
+  const v=String(photoName);
+  if(/^https?:\/\//i.test(v)){
+    return `<div class="detail-photo"><div class="label">Photo</div><img src="${v}" alt="Application photo" style="width:100%;max-width:420px;border-radius:14px;display:block;margin-top:8px"></div>`;
+  }
+  return `<div class="detail-photo"><div class="label">Photo</div><div class="small">📷 ${escapeHtml(v)}</div></div>`;
+}
+</script>
 <script>
 const SUPABASE_URL="https://jrccmucxwgebdurcokix.supabase.co";
 const SUPABASE_KEY="sb_publishable_-IbSEjr2Nn_TpO-jRAujUQ_q-kugYET";
