@@ -85,6 +85,9 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 <label>സ്ഥലത്തിന്റെ ഫോട്ടോ</label>
 <div class="photo-box">
 <input id="photo" type="file" accept="image/*">
+<div id="photoPreview" style="margin-top:10px;display:none">
+  <img id="photoPreviewImg" alt="Selected photo" style="width:100%;max-width:420px;border-radius:12px;display:block">
+</div>
 <div class="small">ഫോട്ടോ എടുക്കുകയോ തിരഞ്ഞെടുക്കുകയോ ചെയ്യാം</div>
 </div>
 
@@ -263,6 +266,22 @@ document.getElementById("gpsBtn")?.addEventListener("click", () => {
     () => { status.textContent = "❌ GPS permission/location unavailable."; }
   );
 });
+</script>
+
+<script>
+(function(){
+  const input=document.getElementById("photo");
+  const box=document.getElementById("photoPreview");
+  const img=document.getElementById("photoPreviewImg");
+  if(!input || !box || !img) return;
+  input.addEventListener("change", function(){
+    const file=this.files && this.files[0];
+    if(!file){ box.style.display="none"; img.removeAttribute("src"); return; }
+    const url=URL.createObjectURL(file);
+    img.src=url;
+    box.style.display="block";
+  });
+})();
 </script>
 </body>
 </html>
