@@ -69,12 +69,41 @@ const show=(id,on)=>$(id).classList.toggle("hidden",!on);
 function message(id,s,ok=false){$(id).innerHTML=s?'<div class="msg '+(ok?'ok':'err')+'">'+esc(s)+'</div>':''}
 
 function cropHTML(v){
-  if(!v)return '<div class="detail"><b>🌾 വിളകളുടെ വിവരങ്ങൾ</b>ലഭ്യമല്ല</div>';
-  let arr=String(v).split(",").map(x=>x.trim()).filter(Boolean);
-  let h='<div class="detail"><b>🌾 നാശം സംഭവിച്ച വിളകളുടെ വിവരങ്ങൾ</b>';
+  const box='<div class="detail"><b>🌾 നാശം സംഭവിച്ച വിളകളുടെ വിവരങ്ങൾ</b>';
+  if(v===null || v===undefined || String(v).trim()===""){
+    return box+'<div class="crop">വിളകളുടെ വിവരങ്ങൾ ലഭ്യമല്ല</div></div>';
+  }
+
+  let arr=[];
+  const raw=String(v).trim();
+  try{
+    const parsed=JSON.parse(raw);
+    if(Array.isArray(parsed)) arr=parsed.map(x=>{
+      if(typeof x==='string') return x;
+      if(x && typeof x==='object'){
+        const crop=x.crop||x.name||x.type||'';
+        const stage=x.stage||x.condition||'';
+        const count=x.count??x.number??x.quantity??'';
+        return [crop,stage,count].filter(x=>String(x).trim()!=='').join(' – ')+(count!==''?' എണ്ണം':'');
+      }
+      return String(x);
+    }).filter(Boolean);
+  }catch(e){}
+  if(!arr.length) arr=raw.split(/[;,\n]+/).map(x=>x.trim()).filter(Boolean);
+  if(!arr.length) arr=[raw];
+
+  let h=box;
   arr.forEach(x=>{
-    let m=x.match(/^(.+?)\s*[–-]\s*(.+?)\s*[–-]\s*(\d+)\s*എണ്ണം$/);
-    h+=m?'<div class="crop"><b>'+esc(m[1])+'</b> — '+esc(m[2])+' — <b>'+esc(m[3])+' എണ്ണം</b></div>':'<div class="crop">'+esc(x)+'</div>';
+    const text=String(x).trim();
+    let m=text.match(/^(.+?)\s*[–—-]\s*(.+?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*എണ്ണം\s*$/);
+    if(!m){
+      m=text.match(/^(.+?)\s*[–—-]\s*(.+?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*$/);
+    }
+    if(m){
+      h+='<div class="crop"><b>'+esc(m[1].trim())+'</b> — '+esc(m[2].trim())+' — <b>'+esc(m[3].trim())+' എണ്ണം</b></div>';
+    }else{
+      h+='<div class="crop">'+esc(text)+'</div>';
+    }
   });
   return h+'</div>';
 }
@@ -154,7 +183,7 @@ async function loadRows(){
 function render(list){
   if(!list.length){$("list").textContent="No applications found.";return}
   $("list").innerHTML=list.map((r,i)=>`<div class="item">
-    <div class="itemtop"><div><div class="appno">${i+1}. ${esc(r.application_no||"Application No. ഇല്ല")}</div><div class="name">${esc(r.applicant_name||"")}</div></div></div>
+    <div class="itemtop"><div><div class="appno">${i+1}. ${esc(r.application_no||"Application No. ഇല്ല")}</div><div class="name">${esc(r.applicant_name||"")}</div>${r.inspection_date?`<div class="small">സ്ഥലം പരിശോധിച്ച തീയതി: ${esc(r.inspection_date)}</div>`:""}${r.damaged_crops?`<div class="small">🌾 ${esc(String(r.damaged_crops).replace(/\s*,\s*/g," • "))}</div>`:""}</div></div>
     <div class="small-actions">
       <button class="primary" onclick="openCase('${r.id}')">Open</button>
       <button class="light" onclick="editCase('${r.id}')">✏️ Edit</button>
@@ -194,16 +223,45 @@ window.openCase=async function(id){
     $("photoBox").innerHTML="";
     if(current.photo_name){
       try{
-        const p=await api("/storage/v1/object/sign/compensation-photos/"+current.photo_name,{
-          method:"POST",headers:{"apikey":KEY,"Authorization":"Bearer "+accessToken,"Content-Type":"application/json"},
-          body:JSON.stringify({expiresIn:3600})
-        });
-        if(p?.signedURL){
-          let u=String(p.signedURL);
-          if(u.startsWith("/"))u=URL+u;
-          $("photoBox").innerHTML='<h3>📷 സ്ഥലം ഫോട്ടോ</h3><img class="photo" src="'+esc(u)+'">';
-        }
-      }catch(e){$("photoBox").innerHTML='<div class="msg err">Photo load failed: '+esc(e.message)+'</div>'}
+function cropHTML(v){
+  const box='<div class="detail"><b>🌾 നാശം സംഭവിച്ച വിളകളുടെ വിവരങ്ങൾ</b>';
+  if(v===null || v===undefined || String(v).trim()===""){
+    return box+'<div class="crop">വിളകളുടെ വിവരങ്ങൾ ലഭ്യമല്ല</div></div>';
+  }
+
+  let arr=[];
+  const raw=String(v).trim();
+  try{
+    const parsed=JSON.parse(raw);
+    if(Array.isArray(parsed)) arr=parsed.map(x=>{
+      if(typeof x==='string') return x;
+      if(x && typeof x==='object'){
+        const crop=x.crop||x.name||x.type||'';
+        const stage=x.stage||x.condition||'';
+        const count=x.count??x.number??x.quantity??'';
+        return [crop,stage,count].filter(x=>String(x).trim()!=='').join(' – ')+(count!==''?' എണ്ണം':'');
+      }
+      return String(x);
+    }).filter(Boolean);
+  }catch(e){}
+  if(!arr.length) arr=raw.split(/[;,\n]+/).map(x=>x.trim()).filter(Boolean);
+  if(!arr.length) arr=[raw];
+
+  let h=box;
+  arr.forEach(x=>{
+    const text=String(x).trim();
+    let m=text.match(/^(.+?)\s*[–—-]\s*(.+?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*എണ്ണം\s*$/);
+    if(!m){
+      m=text.match(/^(.+?)\s*[–—-]\s*(.+?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*$/);
+    }
+    if(m){
+      h+='<div class="crop"><b>'+esc(m[1].trim())+'</b> — '+esc(m[2].trim())+' — <b>'+esc(m[3].trim())+' എണ്ണം</b></div>';
+    }else{
+      h+='<div class="crop">'+esc(text)+'</div>';
+    }
+  });
+  return h+'</div>';
+}      }catch(e){$("photoBox").innerHTML='<div class="msg err">Photo load failed: '+esc(e.message)+'</div>'}
     }
     await loadComments(id);
   }catch(e){alert(e.message)}
