@@ -68,16 +68,7 @@ small{color:#666}
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-function renderPhoto(photoName){
-  if(!photoName) return "";
-  const v=String(photoName);
-  if(/^https?:\/\//i.test(v)){
-    return `<div class="detail-photo"><div class="label">Photo</div><img src="${v}" alt="Application photo" style="width:100%;max-width:420px;border-radius:14px;display:block;margin-top:8px"></div>`;
-  }
-  return `<div class="detail-photo"><div class="label">Photo</div><div class="small">📷 ${escapeHtml(v)}</div></div>`;
-}
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL="https://jrccmucxwgebdurcokix.supabase.co";
 const SUPABASE_KEY="sb_publishable_-IbSEjr2Nn_TpO-jRAujUQ_q-kugYET";
@@ -113,24 +104,56 @@ async function loadCases(){
       <button onclick="deleteCase('${r.id}')" style="background:#d9534f;color:#fff;">Delete</button>
     </div>`).join("");
 }
+async function getPhotoUrl(path){
+  if(!path || !String(path).includes("/")) return null;
+  const {data,error}=await db.storage.from("compensation-photos").createSignedUrl(path,3600);
+  if(error) return null;
+  return data?.signedUrl || null;
+}
+
 window.openCase=async(id)=>{
   const {data,error}=await db.from("compensation_cases").select("*").eq("id",id).single();
   if(error){alert(error.message);return;}
   currentCase=data;
   $("detailsCard").classList.remove("hidden");
+
   const labels={
     application_no:"Application No.",applicant_name:"Applicant Name",applicant_address:"Address",
     age:"Age",mobile:"Mobile",damage_location:"Damage Location",wild_animal:"Wild Animal",
     damaged_crops:"Damaged Crops",damage_details:"Damage Details",latitude:"Latitude",
-    longitude:"Longitude",photo_name:"Photo",witness_names:"Witness Names",
-    witness_numbers:"Witness Numbers",officer_name:"Inspection Officer",area:"Area",
+    longitude:"Latitude / Longitude",witness_names:"Witness Name",
+    witness_numbers:"Witness Number",officer_name:"Inspection Officer",area:"Area",
     compensation_amount:"Estimated Compensation"
   };
-  $("details").innerHTML=Object.entries(labels).map(([k,l])=>
-    `<p><b>${l}:</b> ${esc(data[k])}</p>`).join("");
+
+  let html="";
+  for(const [k,l] of Object.entries(labels)){
+    if(k==="latitude") continue;
+    if(k==="longitude"){
+      const coords=[data.latitude,data.longitude].filter(Boolean).join(" , ");
+      html+=`<p><b>${l}:</b> ${esc(coords)}</p>`;
+      continue;
+    }
+    html+=`<p><b>${l}:</b> ${esc(data[k])}</p>`;
+  }
+
+  if(data.photo_name){
+    const url=await getPhotoUrl(data.photo_name);
+    html+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid #eee">
+      <b>📷 Photo</b>
+      ${url
+        ? `<img src="${url}" alt="Application photo" style="display:block;width:100%;max-width:500px;margin-top:10px;border-radius:14px;border:1px solid #ddd">`
+        : `<p><small>Photo could not be loaded.</small></p>`}
+    </div>`;
+  }else{
+    html+=`<p><b>📷 Photo:</b> No photo uploaded.</p>`;
+  }
+
+  $("details").innerHTML=html;
   loadComments();
   window.scrollTo({top:$("detailsCard").offsetTop,behavior:"smooth"});
 };
+
 async function loadComments(){
   const {data,error}=await db.from("compensation_comments").select("*")
     .eq("case_id",currentCase.id).order("created_at",{ascending:true});
@@ -138,14 +161,21 @@ async function loadComments(){
     `<div class="row"><b>${new Date(c.created_at).toLocaleString()}</b><br>${esc(c.comment)}</div>`).join("")
     :"<small>No comments yet.</small>");
 }
+
 window.deleteCase=async(id)=>{
   const ok=confirm("ഈ അപേക്ഷയുടെ മുഴുവൻ ഡാറ്റയും സ്ഥിരമായി Delete ചെയ്യണോ?");
   if(!ok)return;
+
+  const {data:caseData}=await db.from("compensation_cases").select("photo_name").eq("id",id).single();
 
   const {error}=await db.from("compensation_cases").delete().eq("id",id);
   if(error){
     alert("Delete failed: "+error.message);
     return;
+  }
+
+  if(caseData?.photo_name && String(caseData.photo_name).includes("/")){
+    await db.storage.from("compensation-photos").remove([caseData.photo_name]);
   }
 
   $("detailsCard").classList.add("hidden");
@@ -156,7 +186,7 @@ window.deleteCase=async(id)=>{
 
 $("saveCommentBtn").onclick=async()=>{
   const comment=$("comment").value.trim();
-  if(!comment)return;
+  if(!comment || !currentCase)return;
   const {error}=await db.from("compensation_comments").insert({case_id:currentCase.id,comment});
   $("commentMsg").textContent=error?error.message:"✅ Comment saved";
   if(!error){$("comment").value="";loadComments();}
