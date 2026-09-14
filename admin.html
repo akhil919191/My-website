@@ -223,45 +223,27 @@ window.openCase=async function(id){
     $("photoBox").innerHTML="";
     if(current.photo_name){
       try{
-function cropHTML(v){
-  const box='<div class="detail"><b>🌾 നാശം സംഭവിച്ച വിളകളുടെ വിവരങ്ങൾ</b>';
-  if(v===null || v===undefined || String(v).trim()===""){
-    return box+'<div class="crop">വിളകളുടെ വിവരങ്ങൾ ലഭ്യമല്ല</div></div>';
-  }
-
-  let arr=[];
-  const raw=String(v).trim();
-  try{
-    const parsed=JSON.parse(raw);
-    if(Array.isArray(parsed)) arr=parsed.map(x=>{
-      if(typeof x==='string') return x;
-      if(x && typeof x==='object'){
-        const crop=x.crop||x.name||x.type||'';
-        const stage=x.stage||x.condition||'';
-        const count=x.count??x.number??x.quantity??'';
-        return [crop,stage,count].filter(x=>String(x).trim()!=='').join(' – ')+(count!==''?' എണ്ണം':'');
+        const path=String(current.photo_name).replace(/^\/+/, "");
+        const signResp=await fetch(
+          URL+"/storage/v1/object/sign/compensation-photos/"+path.split("/").map(encodeURIComponent).join("/"),
+          {
+            method:"POST",
+            headers:authHeaders({"Content-Type":"application/json"}),
+            body:JSON.stringify({expiresIn:3600})
+          }
+        );
+        const signText=await signResp.text();
+        let signData=null; try{signData=signText?JSON.parse(signText):null}catch(e){}
+        if(!signResp.ok) throw new Error(signData?.message||signData?.error||signText||("HTTP "+signResp.status));
+        const signed=signData?.signedURL||signData?.signedUrl||signData?.signed_url;
+        if(!signed) throw new Error("Signed photo URL ലഭിച്ചില്ല");
+        const photoUrl=signed.startsWith("http")?signed:(URL+signed);
+        $("photoBox").innerHTML='<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b><img class="photo" src="'+esc(photoUrl)+'" alt="Application photo" onerror="this.outerHTML=\'<div class="msg err">Photo തുറക്കാൻ കഴിഞ്ഞില്ല.</div>\'"></div>';
+      }catch(e){
+        $("photoBox").innerHTML='<div class="msg err">Photo load failed: '+esc(e.message)+'</div>';
       }
-      return String(x);
-    }).filter(Boolean);
-  }catch(e){}
-  if(!arr.length) arr=raw.split(/[;,\n]+/).map(x=>x.trim()).filter(Boolean);
-  if(!arr.length) arr=[raw];
-
-  let h=box;
-  arr.forEach(x=>{
-    const text=String(x).trim();
-    let m=text.match(/^(.+?)\s*[–—-]\s*(.+?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*എണ്ണം\s*$/);
-    if(!m){
-      m=text.match(/^(.+?)\s*[–—-]\s*(.+?)\s*[–—-]\s*(\d+(?:\.\d+)?)\s*$/);
-    }
-    if(m){
-      h+='<div class="crop"><b>'+esc(m[1].trim())+'</b> — '+esc(m[2].trim())+' — <b>'+esc(m[3].trim())+' എണ്ണം</b></div>';
     }else{
-      h+='<div class="crop">'+esc(text)+'</div>';
-    }
-  });
-  return h+'</div>';
-}      }catch(e){$("photoBox").innerHTML='<div class="msg err">Photo load failed: '+esc(e.message)+'</div>'}
+      $("photoBox").innerHTML='<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b><div class="crop">ഫോട്ടോ അപ്‌ലോഡ് ചെയ്തിട്ടില്ല</div></div>';
     }
     await loadComments(id);
   }catch(e){alert(e.message)}
