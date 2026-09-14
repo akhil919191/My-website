@@ -1,3 +1,72 @@
+
+<script id="crop-selector-script">
+document.addEventListener("DOMContentLoaded", function(){
+  const select=document.getElementById("cropSelect");
+  const stage=document.getElementById("cropStage");
+  const add=document.getElementById("addCropBtn");
+  const tags=document.getElementById("cropTags");
+  const extra=document.getElementById("cropAdditional");
+  const hidden=document.getElementById("damagedCropsHidden");
+  if(!select || !stage || !add || !tags || !hidden) return;
+
+  const crops=[];
+  function render(){
+    tags.innerHTML="";
+    crops.forEach((item,i)=>{
+      const tag=document.createElement("span");
+      tag.style.cssText="padding:7px 10px;border-radius:999px;background:#eef4ff;color:#155eef;font-weight:700";
+      tag.innerHTML=item+" <button type='button' data-i='"+i+"' style='border:0;background:none;color:#d92d20;font-weight:900'>×</button>";
+      tags.appendChild(tag);
+    });
+    hidden.value=crops.join(", ");
+  }
+  add.addEventListener("click",function(){
+    const c=select.value, s=stage.value;
+    if(!c) return alert("വിള തിരഞ്ഞെടുക്കുക.");
+    if(!s) return alert("വിളയുടെ അവസ്ഥ തിരഞ്ഞെടുക്കുക.");
+    const value=c+" – "+s;
+    if(!crops.includes(value)) crops.push(value);
+    render();
+    select.value=""; stage.value="";
+  });
+  tags.addEventListener("click",function(e){
+    if(e.target.dataset.i!==undefined){
+      crops.splice(Number(e.target.dataset.i),1); render();
+    }
+  });
+  if(extra){
+    extra.addEventListener("input",function(){
+      const extras=this.value.trim();
+      const base=crops.filter(x=>!x.startsWith("Additional:"));
+      if(extras) base.push("Additional: "+extras);
+      hidden.value=base.join(", ");
+    });
+  }
+  render();
+});
+
+document.addEventListener("submit", function(e){
+  const form=e.target;
+  if(!form || !form.matches("form")) return;
+  const app=form.querySelector('[name="application_no"]');
+  const officer=form.querySelector('[name="officer_name"]');
+  if(app && !/^\d{4,}$/.test(app.value.trim())){
+    e.preventDefault();
+    alert("അപ്ലിക്കേഷൻ നമ്പർ കുറഞ്ഞത് 4 അക്കമെങ്കിലും വേണം.");
+    app.focus(); return;
+  }
+  if(officer && !officer.value.trim()){
+    e.preventDefault();
+    alert("പരിശോധിച്ച ഉദ്യോഗസ്ഥന്റെ പേര് നിർബന്ധമാണ്.");
+    officer.focus(); return;
+  }
+  const crops=form.querySelector("#damagedCropsHidden");
+  if(crops && !crops.value.trim()){
+    e.preventDefault();
+    alert("കുറഞ്ഞത് ഒരു വിള തിരഞ്ഞെടുക്കുക.");
+  }
+}, true);
+</script>
 <!DOCTYPE html>
 <html lang="ml">
 <head>
@@ -35,6 +104,12 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 .linkbox{word-break:break-all;background:#f2f6f4;padding:10px;border-radius:8px;font-size:13px}.admin-box{margin-top:18px;padding:15px;border:1px solid #d5e0db;border-radius:12px;background:#f8fbf9}.admin-box h3{margin:0 0 10px;color:#176b45;font-size:17px}
 @media(max-width:600px){.row,.search-row{grid-template-columns:1fr}.card{padding:16px}}
 </style>
+
+<style id="crop-ui-style">
+.crop-section select,.crop-section input{width:100%;box-sizing:border-box;padding:11px;border:1px solid #d9e1ec;border-radius:12px;background:#fff}
+.crop-section button{padding:10px 14px;border:0;border-radius:10px;background:#155eef;color:#fff;font-weight:700}
+.required{color:#d92d20}
+</style>
 </head>
 <body>
 <header class="header">
@@ -43,42 +118,45 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 </header>
 
 <main class="container">
-<div class="card">
-<h2>പുതിയ സംഭവം ചേർക്കുക</h2>
-<form id="compensationForm">
 
-<label>അപേക്ഷ നമ്പർ (Application No.) <span style="color:#b00020">*</span></label>
-<input id="application_no" type="text" required placeholder="അപേക്ഷ നമ്പർ നൽകുക">
-<div id="applicationNoStatus" class="small" style="margin-top:7px;min-height:18px"></div>
+<div class="field crop-section">
+  <label for="cropSelect">🌾 കൃഷിനാശം സംഭവിച്ച വിളകൾ <span class="required">*</span></label>
+  <select id="cropSelect">
+    <option value="">വിള തിരഞ്ഞെടുക്കുക</option>
+    <option value="തെങ്ങ്">തെങ്ങ്</option>
+    <option value="കവുങ്ങ്">കവുങ്ങ്</option>
+    <option value="കാപ്പി">കാപ്പി</option>
+    <option value="കുരുമുളക്">കുരുമുളക്</option>
+    <option value="ഏത്തവാഴ">ഏത്തവാഴ</option>
+    <option value="വെജിറ്റബിൾ">വെജിറ്റബിൾ</option>
+    <option value="ഇഞ്ചി">ഇഞ്ചി</option>
+    <option value="മരച്ചീനി">മരച്ചീനി</option>
+    <option value="കശുവണ്ടി">കശുവണ്ടി</option>
+    <option value="വാഴ">വാഴ</option>
+    <option value="നെല്ല്">നെല്ല്</option>
+    <option value="റബ്ബർ">റബ്ബർ</option>
+    <option value="മാവ്">മാവ്</option>
+    <option value="പ്ലാവ്">പ്ലാവ്</option>
+    <option value="മറ്റുള്ളവ">മറ്റുള്ളവ</option>
+  </select>
 
-<label>അപേക്ഷകന്റെ പേര് <span style="color:#b00020">*</span></label>
-<input id="applicant_name" type="text" required>
+  <select id="cropStage" style="margin-top:8px">
+    <option value="">അവസ്ഥ തിരഞ്ഞെടുക്കുക</option>
+    <option value="കായ്ച്ചത്">കായ്ച്ചത്</option>
+    <option value="കുലച്ചത്">കുലച്ചത്</option>
+    <option value="പഴുത്തത്">പഴുത്തത്</option>
+    <option value="വളർച്ചയിൽ">വളർച്ചയിൽ</option>
+    <option value="പൂവിട്ടത്">പൂവിട്ടത്</option>
+    <option value="തൈ/ചെടി">തൈ/ചെടി</option>
+  </select>
 
-<label>അപേക്ഷകന്റെ വിലാസം <span style="color:#b00020">*</span></label>
-<textarea id="applicant_address" required></textarea>
+  <button type="button" id="addCropBtn" style="margin-top:8px">＋ വിള ചേർക്കുക</button>
+  <div id="cropTags" style="display:flex;flex-wrap:wrap;gap:7px;margin-top:9px"></div>
 
-<div class="row">
-<div><label>വയസ്</label><input id="age" type="number" min="1" max="120"></div>
-<div><label>മൊബൈൽ നമ്പർ <span style="color:#b00020">*</span></label><input id="mobile" type="tel"></div>
+  <input type="text" id="cropAdditional" placeholder="Additional crop / type ഇവിടെ ടൈപ്പ് ചെയ്യാം" style="margin-top:8px">
+  <input type="hidden" name="damaged_crops" id="damagedCropsHidden">
 </div>
 
-<label>കൃഷിനാശം സംഭവിച്ച സ്ഥലം <span style="color:#b00020">*</span></label>
-<input id="damage_location" type="text" required>
-
-<label>കൃഷിനാശം വരുത്തിയ വന്യമൃഗത്തിന്റെ പേര് <span style="color:#b00020">*</span></label>
-<input id="wild_animal" type="text" required>
-
-<label>കൃഷിനാശം സംഭവിച്ച വിളകളുടെ പേര് <span style="color:#b00020">*</span></label>
-<input id="damaged_crops" type="text" required placeholder="ഉദാ: തെങ്ങ്, വാഴ, കപ്പ">
-
-<label>കൃഷിനാശത്തിന്റെ വിശദാംശങ്ങൾ</label>
-<textarea id="damage_details"></textarea>
-
-<label>സ്ഥലത്തിന്റെ GPS</label>
-<div class="row">
-<input id="latitude" type="text" placeholder="Latitude" readonly>
-<input id="longitude" type="text" placeholder="Longitude" readonly>
-</div>
 <button type="button" class="secondary" id="gpsBtn">📍 GPS Location എടുക്കുക</button>
 <div id="gpsStatus" class="small" style="margin-top:8px"></div>
 
@@ -100,7 +178,7 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 
 <label>സാക്ഷിയുടെ പേര്</label><input id="witness_names" type="text">
 <label>സാക്ഷിയുടെ നമ്പർ</label><input id="witness_numbers" type="tel">
-<label>പരിശോധന ഉദ്യോഗസ്ഥൻ</label><input id="officer_name" type="text">
+<label>പരിശോധന ഉദ്യോഗസ്ഥൻ</label><input id="officer_name" required type="text">
 <label>വിസ്തീർണ്ണം</label><input id="area" type="text" placeholder="ഉദാ: 0.50 ഏക്കർ">
 <label>നഷ്ടപരിഹാര തുക</label><input id="compensation_amount" type="number" min="0" step="0.01" placeholder="₹">
 
