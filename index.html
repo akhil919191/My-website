@@ -168,6 +168,7 @@ document.addEventListener("DOMContentLoaded", function(){
   const add=document.getElementById("addCropBtn"), tags=document.getElementById("cropTags"), extra=document.getElementById("cropAdditional"), hidden=document.getElementById("damagedCropsHidden");
   if(!select||!stage||!count||!add||!tags||!hidden) return;
   const crops=[];
+  window.selectedCompensationCrops=crops;
   function render(){
     tags.innerHTML="";
     crops.forEach((x,i)=>{
