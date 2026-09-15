@@ -101,9 +101,12 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 </select>
 <select id="cropStage" style="margin-top:8px">
 <option value="">അവസ്ഥ തിരഞ്ഞെടുക്കുക</option>
-<option>കായ്ച്ചത്</option><option>കുലച്ചത്</option><option>പഴുത്തത്</option>
+<option>കായ്ച്ചത്</option><option>കായ്ക്കാത്തത്</option>
+<option>കുലച്ചത്</option><option>കുലയ്ക്കാത്തത്</option>
+<option>പഴുത്തത്</option><option>പഴുക്കാത്തത്</option>
 <option>വളർച്ചയിൽ</option><option>പൂവിട്ടത്</option><option>തൈ/ചെടി</option>
 </select>
+<div class="small" style="margin-top:5px">കായ്ച്ചത് / കായ്ക്കാത്തത്, കുലച്ചത് / കുലയ്ക്കാത്തത്, പഴുത്തത് / പഴുക്കാത്തത് എന്നിവയ്ക്ക് ബാധകമായ rate സ്വയം എടുക്കും.</div>
 <input id="cropCountInput" type="number" min="1" step="1" inputmode="numeric" placeholder="എണ്ണം (ഉദാ: 4)" style="margin-top:8px">
 <button type="button" id="addCropBtn" style="margin-top:8px">＋ വിള ചേർക്കുക</button>
     <button type="button" id="saveCropBtn" class="secondary" style="margin-top:8px;width:100%">💾 വിളകളുടെ വിവരം Save</button>
@@ -174,34 +177,62 @@ document.addEventListener("DOMContentLoaded", function(){
   const crops=[];
   window.selectedCompensationCrops=crops;
 
-  // Rates from the supplied compensation-rate sheet.
-  // For stage-dependent crops, the rate is selected automatically from the stage.
+  // Rates transcribed from the supplied compensation-rate sheet.
+  // Where the sheet gives separate bearing/non-bearing rates, the stage controls the rate.
   const rates={
-    "നെല്ല്":11000,
-    "തെങ്ങ്":770,
-    "കവുങ്ങ്":165,
-    "കാപ്പി":110,
-    "കുരുമുളക്":83,
-    "ഇഞ്ചി":165,
-    "മരച്ചീനി":165,
-    "കശുവണ്ടി":165,
-    "കൊക്കോ":110,
-    "വെജിറ്റബിൾ":220,
-    "മാവ്":220,
-    "പ്ലാവ്":220,
-    "റബ്ബർ":220,
-    "വാഴ":110,
-    "ഏത്തവാഴ":110
+    "നെല്ല്":11000, "കാപ്പി":110, "കുരുമുളക്":83, "ഇഞ്ചി":165, "മഞ്ഞൾ":132,
+    "മരച്ചീനി":165, "വെജിറ്റബിൾ":220, "മാവ്":220, "പ്ലാവ്":220,
+    "ഏത്തവാഴ":110, "തേങ്ങ":770, "കശുവണ്ടി":165, "കവുങ്ങ്":165,
+    "കൊക്കോ":110, "റബ്ബർ":220, "വാഴ":110, "നെല്ല്":11000,
+    "കടുക്":0
   };
 
   function getRate(crop, stage){
+    // Bearing stages use the bearing rate; their opposite stages use the non-bearing rate.
+    const bearing = stage==="കായ്ച്ചത്" || stage==="കുലച്ചത്" || stage==="പഴുത്തത്";
+    const nonBearing = stage==="കായ്ക്കാത്തത്" || stage==="കുലയ്ക്കാത്തത്" || stage==="പഴുക്കാത്തത്" || stage==="തൈ/ചെടി" || stage==="വളർച്ചയിൽ";
+
     if(crop==="തെങ്ങ്"){
-      if(stage==="തൈ/ചെടി") return 110;
-      if(stage==="വളർച്ചയിൽ") return 385;
-      return 770;
+      if(nonBearing) return stage==="തൈ/ചെടി" || stage==="വളർച്ചയിൽ" ? 110 : 385;
+      if(bearing) return 770;
     }
-    if(crop==="റബ്ബർ") return stage==="കായ്ച്ചത്" ? 280 : 220;
-    if(crop==="വാഴ" || crop==="ഏത്തവാഴ") return stage==="വളർച്ചയിൽ" || stage==="തൈ/ചെടി" ? 83 : 110;
+    if(crop==="വാഴ" || crop==="ഏത്തവാഴ"){
+      if(nonBearing) return 83;
+      if(bearing) return 110;
+    }
+    if(crop==="റബ്ബർ"){
+      if(nonBearing) return 220;
+      if(bearing) return 280;
+    }
+    if(crop==="കശുവണ്ടി" || crop==="കവുങ്ങ്"){
+      if(nonBearing) return 110;
+      if(bearing) return 165;
+    }
+    if(crop==="കൊക്കോ"){
+      if(nonBearing) return 100;
+      if(bearing) return 110;
+    }
+    if(crop==="കാപ്പി"){
+      if(nonBearing) return 100;
+      if(bearing) return 110;
+    }
+    if(crop==="കുരുമുളക്"){
+      if(nonBearing) return 75;
+      if(bearing) return 83;
+    }
+    if(crop==="ഇഞ്ചി"){
+      if(bearing || nonBearing) return bearing ? 165 : 150;
+    }
+    if(crop==="മരച്ചീനി"){
+      if(bearing || nonBearing) return bearing ? 165 : 150;
+    }
+    if(crop==="വെജിറ്റബിൾ"){
+      if(bearing || nonBearing) return bearing ? 220 : 200;
+    }
+    if(crop==="മാവ്" || crop==="പ്ലാവ്"){
+      if(bearing || nonBearing) return bearing ? 220 : 200;
+    }
+    if(crop==="നെല്ല്") return 11000;
     return rates[crop] || 0;
   }
 
