@@ -35,7 +35,7 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 .linkbox{word-break:break-all;background:#f2f6f4;padding:10px;border-radius:8px;font-size:13px}.admin-box{margin-top:18px;padding:15px;border:1px solid #d5e0db;border-radius:12px;background:#f8fbf9}.admin-box h3{margin:0 0 10px;color:#176b45;font-size:17px}
 @media(max-width:600px){.row,.search-row{grid-template-columns:1fr}.card{padding:16px}}
 </style>
-<style id="crop-row-style">.crop-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid #d5e0db;border-radius:10px;background:#f8fbf9}.crop-row button{padding:5px 10px;background:#fdeaea;color:#9b2020;border:0;border-radius:8px;font-size:18px}</style>
+<style id="crop-row-style">.crop-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid #d5e0db;border-radius:10px;background:#f8fbf9}.crop-row button{padding:5px 10px;background:#fdeaea;color:#9b2020;border:0;border-radius:8px;font-size:18px}.crop-info{flex:1}.crop-amount{font-weight:700;margin-top:4px}.crop-total{margin-top:10px;padding:12px;border-radius:10px;background:#eef7f1;border:1px solid #b9d9c5;font-size:17px;font-weight:700}</style>
 </head>
 
 <body>
@@ -95,7 +95,7 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 <select id="cropSelect">
 <option value="">വിള തിരഞ്ഞെടുക്കുക</option>
 <option>തെങ്ങ്</option><option>കവുങ്ങ്</option><option>കാപ്പി</option><option>കുരുമുളക്</option>
-<option>ഏത്തവാഴ</option><option>വെജിറ്റബിൾ</option><option>ഇഞ്ചി</option><option>മരച്ചീനി</option>
+<option>ഏത്തവാഴ</option><option>കൊക്കോ</option><option>വെജിറ്റബിൾ</option><option>ഇഞ്ചി</option><option>മരച്ചീനി</option>
 <option>കശുവണ്ടി</option><option>വാഴ</option><option>നെല്ല്</option><option>റബ്ബർ</option>
 <option>മാവ്</option><option>പ്ലാവ്</option><option>മറ്റുള്ളവ</option>
 </select>
@@ -157,7 +157,8 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 <input id="area" name="area" type="text" placeholder="ഉദാ: 0.50 ഏക്കർ">
 
 <label for="compensation_amount">നഷ്ടപരിഹാര തുക</label>
-<input id="compensation_amount" name="compensation_amount" type="number" min="0" step="0.01" placeholder="₹">
+<input id="compensation_amount" name="compensation_amount" type="number" min="0" step="0.01" placeholder="₹" readonly>
+<div class="small">വിളകളുടെ എണ്ണം നൽകിയാൽ നഷ്ടപരിഹാര തുക സ്വയം കണക്കാക്കും.</div>
 
 <button class="primary" type="submit">💾 SAVE</button>
 <div id="status"></div>
@@ -168,30 +169,72 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 document.addEventListener("DOMContentLoaded", function(){
   const select=document.getElementById("cropSelect"), stage=document.getElementById("cropStage"), count=document.getElementById("cropCountInput");
   const add=document.getElementById("addCropBtn"), tags=document.getElementById("cropTags"), extra=document.getElementById("cropAdditional"), hidden=document.getElementById("damagedCropsHidden");
+  const amountField=document.getElementById("compensation_amount");
   if(!select||!stage||!count||!add||!tags||!hidden) return;
   const crops=[];
-  try{
-    const savedCropDraft=sessionStorage.getItem("compensation_crop_draft");
-    if(savedCropDraft) hidden.value=savedCropDraft;
-  }catch(e){}
   window.selectedCompensationCrops=crops;
+
+  // Rates from the supplied compensation-rate sheet.
+  // For stage-dependent crops, the rate is selected automatically from the stage.
+  const rates={
+    "നെല്ല്":11000,
+    "തെങ്ങ്":770,
+    "കവുങ്ങ്":165,
+    "കാപ്പി":110,
+    "കുരുമുളക്":83,
+    "ഇഞ്ചി":165,
+    "മരച്ചീനി":165,
+    "കശുവണ്ടി":165,
+    "കൊക്കോ":110,
+    "വെജിറ്റബിൾ":220,
+    "മാവ്":220,
+    "പ്ലാവ്":220,
+    "റബ്ബർ":220,
+    "വാഴ":110,
+    "ഏത്തവാഴ":110
+  };
+
+  function getRate(crop, stage){
+    if(crop==="തെങ്ങ്"){
+      if(stage==="തൈ/ചെടി") return 110;
+      if(stage==="വളർച്ചയിൽ") return 385;
+      return 770;
+    }
+    if(crop==="റബ്ബർ") return stage==="കായ്ച്ചത്" ? 280 : 220;
+    if(crop==="വാഴ" || crop==="ഏത്തവാഴ") return stage==="വളർച്ചയിൽ" || stage==="തൈ/ചെടി" ? 83 : 110;
+    return rates[crop] || 0;
+  }
+
+  function formatINR(n){ return "₹"+Number(n||0).toLocaleString("en-IN"); }
+
   function render(){
     tags.innerHTML="";
+    let total=0;
     crops.forEach((x,i)=>{
+      const rate=getRate(x.crop,x.stage);
+      const amount=rate*Number(x.count||0);
+      total+=amount;
       const row=document.createElement("div"); row.className="crop-row";
-      row.innerHTML='<span><strong>'+x.crop+'</strong> – '+x.stage+' – <strong>'+x.count+'</strong> എണ്ണം</span><button type="button" data-i="'+i+'">×</button>';
+      row.innerHTML='<div class="crop-info"><strong>'+x.crop+'</strong> – '+x.stage+' – <strong>'+x.count+'</strong> എണ്ണം<div class="crop-amount">Rate: '+formatINR(rate)+' × '+x.count+' = '+formatINR(amount)+'</div></div><button type="button" data-i="'+i+'">×</button>';
       tags.appendChild(row);
     });
     const additional=extra&&extra.value.trim()? ["Additional: "+extra.value.trim()] : [];
     hidden.value=crops.map(x=>x.crop+" – "+x.stage+" – "+x.count+" എണ്ണം").concat(additional).join(", ");
-    const total=crops.reduce((s,x)=>s+Number(x.count||0),0);
+    let totalBox=document.getElementById("cropTotalBox");
+    if(!totalBox){ totalBox=document.createElement("div"); totalBox.id="cropTotalBox"; tags.parentNode.insertBefore(totalBox, tags.nextSibling); }
+    totalBox.className="crop-total";
+    totalBox.textContent="💰 മൊത്തം നഷ്ടപരിഹാരം: "+formatINR(total);
+    if(amountField) amountField.value=total>0?total:"";
   }
+
   add.addEventListener("click",function(){
     const c=select.value,s=stage.value,n=count.value.trim();
     if(!c) return alert("വിള തിരഞ്ഞെടുക്കുക.");
     if(!s) return alert("വിളയുടെ അവസ്ഥ തിരഞ്ഞെടുക്കുക.");
     if(!n || Number(n)<1) return alert("വിളയുടെ എണ്ണം നൽകുക.");
-    crops.push({crop:c,stage:s,count:Number(n)}); render();
+    const rate=getRate(c,s);
+    if(!rate) return alert("ഈ വിളയ്ക്ക് rate ലഭ്യമല്ല.");
+    crops.push({crop:c,stage:s,count:Number(n),rate:rate}); render();
     select.value=""; stage.value=""; count.value="";
   });
   tags.addEventListener("click",function(e){ if(e.target.dataset.i!==undefined){ crops.splice(Number(e.target.dataset.i),1); render(); }});
