@@ -155,18 +155,19 @@ window.addEventListener("unhandledrejection",function(e){
   if(box) box.innerHTML='<div class="msg err">❌ Login error: '+esc(e.reason?.message||e.reason||"Unknown error")+'</div>';
 });
 
-async function downloadPhoto(url, fileName){
+async function downloadPhoto(path, fileName){
   const msg=$("photoDownloadMsg");
   try{
     if(msg) msg.textContent="Download തയ്യാറാക്കുന്നു...";
-    const r=await fetch(url);
+    const encoded=String(path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
+    const r=await fetch(URL+"/storage/v1/object/authenticated/"+PHOTO_BUCKET+"/"+encoded,{headers:authHeaders()});
     if(!r.ok) throw new Error("Download failed (HTTP "+r.status+")");
     const blob=await r.blob();
     const objectUrl=URL.createObjectURL(blob);
     const a=document.createElement("a");
     a.href=objectUrl; a.download=fileName||"compensation-photo.jpg";
     document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(objectUrl),2000);
+    setTimeout(()=>URL.revokeObjectURL(objectUrl),5000);
     if(msg) msg.textContent="✅ Download ആരംഭിച്ചു.";
   }catch(e){
     if(msg) msg.textContent="❌ Download failed: "+e.message;
@@ -275,20 +276,22 @@ window.openCase=async function(id){
         path=decodeURIComponent(path);
         if(!path || path.includes("..")) throw new Error("Invalid photo path");
         const encodedPath=path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
-        const signResp=await fetch(URL+"/storage/v1/object/sign/"+PHOTO_BUCKET+"/"+encodedPath,{
-          method:"POST",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify({expiresIn:3600})
-        });
-        const signText=await signResp.text();
-        let signData=null;try{signData=signText?JSON.parse(signText):null}catch(e){}
-        if(!signResp.ok) throw new Error(signData?.message||signData?.error||signData?.statusCode||signText||("HTTP "+signResp.status));
-        const signed=signData?.signedURL||signData?.signedUrl||signData?.signed_url;
-        if(!signed) throw new Error("Signed photo URL ലഭിച്ചില്ല");
-        const photoUrl=signed.startsWith("http")?signed:(URL+signed);
+        // Load the private Storage object with the authenticated Admin token.
+        // This avoids broken signed URLs and also gives the Download button the same secure access path.
+        const encodedPath=path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+        const photoResp=await fetch(URL+"/storage/v1/object/authenticated/"+PHOTO_BUCKET+"/"+encodedPath,{headers:authHeaders()});
+        if(!photoResp.ok){
+          const errText=await photoResp.text();
+          throw new Error(errText || ("Photo load failed (HTTP "+photoResp.status+")"));
+        }
+        const photoBlob=await photoResp.blob();
+        const photoUrl=URL.createObjectURL(photoBlob);
         const fileName=path.split("/").pop()||"compensation-photo.jpg";
-        window._currentPhotoUrl=photoUrl;
+        window._currentPhotoPath=path;
         window._currentPhotoName=fileName;
+        window._currentPhotoObjectUrl=photoUrl;
         $("photoBox").innerHTML='<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b><img id="adminPhoto" class="photo" src="'+esc(photoUrl)+'" alt="Application photo"><button id="downloadPhotoBtn" class="green" type="button" style="margin-top:10px;width:100%">⬇️ ഫോട്ടോ Download</button><div id="photoDownloadMsg" class="small" style="margin-top:6px"></div></div>';
-        $("downloadPhotoBtn").onclick=()=>downloadPhoto(window._currentPhotoUrl,window._currentPhotoName);
+        $("downloadPhotoBtn").onclick=()=>downloadPhoto(window._currentPhotoPath,window._currentPhotoName);
         $("adminPhoto").onerror=()=>{$("photoDownloadMsg").textContent="📷 ഫോട്ടോ തുറക്കാൻ കഴിഞ്ഞില്ല."};
       }catch(e){
         $("photoBox").innerHTML='<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b><div class="msg err">Photo load failed: '+esc(e.message)+'</div></div>';
