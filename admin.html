@@ -275,7 +275,6 @@ window.openCase=async function(id){
         path=path.split("?")[0].split("#")[0];
         path=decodeURIComponent(path);
         if(!path || path.includes("..")) throw new Error("Invalid photo path");
-        const encodedPath=path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
         // Load the private Storage object with the authenticated Admin token.
         // This avoids broken signed URLs and also gives the Download button the same secure access path.
         const encodedPath=path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
