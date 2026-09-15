@@ -18,7 +18,6 @@ textarea{min-height:90px;resize:vertical}
 button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:700;cursor:pointer}
 .primary{background:#176b45;color:#fff;width:100%;margin-top:8px}.secondary{background:#e8f1ed;color:#176b45}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.photo-box{border:2px dashed #b9cbc2;border-radius:10px;padding:15px;text-align:center}
 .small{font-size:12px;color:#65756e}.hidden{display:none}
 #status{margin-top:12px;padding:10px;border-radius:8px;display:none}
 .success{background:#e6f5ec;color:#176b45}.error{background:#fdeaea;color:#9b2020}
@@ -131,22 +130,6 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 </div>
 <button type="button" class="secondary" id="gpsBtn">📍 GPS Location എടുക്കുക</button>
 <div id="gpsStatus" class="small" style="margin-top:8px"></div>
-
-<label>സ്ഥലത്തിന്റെ ഫോട്ടോ</label>
-<div class="photo-box">
-<input id="cameraPhoto" type="file" accept="image/*" capture="environment" style="display:none">
-<input id="galleryPhoto" type="file" accept="image/*" style="display:none">
-<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-<button type="button" class="secondary" id="cameraBtn">📷 Camera</button>
-<button type="button" class="secondary" id="galleryBtn">🖼️ Gallery</button>
-</div>
-<input id="photo" type="hidden">
-<div id="photoName" class="small" style="margin-top:8px"></div>
-<div id="photoPreview" style="margin-top:10px;display:none">
-<img id="photoPreviewImg" alt="Selected photo" style="width:100%;max-width:420px;border-radius:12px;display:block">
-</div>
-<div class="small" style="margin-top:8px">ഫോട്ടോ എടുക്കുകയോ Gallery-യിൽ നിന്ന് തിരഞ്ഞെടുക്കുകയോ ചെയ്യാം</div>
-</div>
 
 <label for="witness_names">സാക്ഷിയുടെ പേര്</label>
 <input id="witness_names" name="witness_names" type="text">
@@ -290,8 +273,6 @@ document.addEventListener("DOMContentLoaded", function(){
 <script>
 const SUPABASE_URL = "https://jrccmucxwgebdurcokix.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_-IbSEjr2Nn_TpO-jRAujUQ_q-kugYET";
-const PHOTO_BUCKET = "compensation-photos";
-
 const form = document.getElementById("compensationForm");
 const statusBox = document.getElementById("status");
 
@@ -300,7 +281,6 @@ function val(id){
   return el ? el.value.trim() : "";
 }
 
-let selectedPhotoFile = null;
 let applicationNoExists = false;
 let applicationNoTimer = null;
 
@@ -309,34 +289,6 @@ function setStatus(type, html){
   statusBox.className = type || "";
   statusBox.innerHTML = html;
 }
-
-function previewPhoto(file){
-  selectedPhotoFile = file || null;
-  const img = document.getElementById("photoPreviewImg");
-  const box = document.getElementById("photoPreview");
-  const name = document.getElementById("photoName");
-  if(!file){
-    box.style.display="none";
-    img.removeAttribute("src");
-    name.textContent="";
-    return;
-  }
-  name.textContent = "📷 " + file.name;
-  const url = URL.createObjectURL(file);
-  img.src = url;
-  box.style.display = "block";
-}
-
-document.getElementById("cameraBtn")?.addEventListener("click",()=>document.getElementById("cameraPhoto").click());
-document.getElementById("galleryBtn")?.addEventListener("click",()=>document.getElementById("galleryPhoto").click());
-document.getElementById("cameraPhoto")?.addEventListener("change",e=>{
-  const f=e.target.files?.[0];
-  if(f) previewPhoto(f);
-});
-document.getElementById("galleryPhoto")?.addEventListener("change",e=>{
-  const f=e.target.files?.[0];
-  if(f) previewPhoto(f);
-});
 
 async function checkApplicationNumber(showAvailable=true){
   const field=document.getElementById("application_no");
@@ -376,33 +328,6 @@ async function checkApplicationNumber(showAvailable=true){
 
 document.getElementById("application_no")?.addEventListener("blur",()=>checkApplicationNumber(true));
 document.getElementById("application_no")?.addEventListener("change",()=>checkApplicationNumber(true));
-
-async function uploadPhoto(file, applicationNo){
-  if(!file) return null;
-  const safeBase = String(applicationNo || "application");
-  const safeNo = safeBase.replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,80) || "application";
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g,"") || "jpg";
-  const path = safeNo + "/" + Date.now() + "-" + Math.random().toString(36).slice(2,10) + "." + ext;
-
-  const res = await fetch(
-    SUPABASE_URL + "/storage/v1/object/" + PHOTO_BUCKET + "/" + path,
-    {
-      method:"POST",
-      headers:{
-        "apikey":SUPABASE_ANON_KEY,
-        "Authorization":"Bearer "+SUPABASE_ANON_KEY,
-        "Content-Type":file.type || "image/jpeg",
-        "x-upsert":"false"
-      },
-      body:file
-    }
-  );
-  if(!res.ok){
-    const t=await res.text();
-    throw new Error("Photo upload failed: " + t);
-  }
-  return path;
-}
 
 form.addEventListener("submit", async (e)=>{
   e.preventDefault();
@@ -461,7 +386,6 @@ form.addEventListener("submit", async (e)=>{
     damage_details:val("damage_details"),
     latitude:val("latitude"),
     longitude:val("longitude"),
-    photo_name:null,
     witness_names:val("witness_names"),
     witness_numbers:val("witness_numbers"),
     officer_name:val("officer_name"),
@@ -469,14 +393,7 @@ form.addEventListener("submit", async (e)=>{
     compensation_amount:val("compensation_amount") ? Number(val("compensation_amount")) : null
   };
 
-  let uploadedPath=null;
   try{
-    if(selectedPhotoFile){
-      setStatus("", "📷 Photo uploading...");
-      uploadedPath=await uploadPhoto(selectedPhotoFile,data.application_no);
-      data.photo_name=uploadedPath;
-    }
-
     setStatus("", "Saving...");
     const response=await fetch(SUPABASE_URL+"/rest/v1/compensation_cases",{
       method:"POST",
@@ -508,8 +425,6 @@ form.addEventListener("submit", async (e)=>{
       const hidden=document.getElementById("damagedCropsHidden");
       if(hidden) hidden.value="";
     }
-    selectedPhotoFile=null;
-    previewPhoto(null);
     document.getElementById("applicationNoStatus").textContent="";
   }catch(error){
     console.error(error);
@@ -531,19 +446,5 @@ document.getElementById("gpsBtn")?.addEventListener("click",()=>{
     ()=>{status.textContent="❌ GPS permission/location unavailable.";}
   );
 });
-</script><script>
-(function(){
-  const input=document.getElementById("photo");
-  const box=document.getElementById("photoPreview");
-  const img=document.getElementById("photoPreviewImg");
-  if(!input || !box || !img) return;
-  input.addEventListener("change", function(){
-    const file=this.files && this.files[0];
-    if(!file){ box.style.display="none"; img.removeAttribute("src"); return; }
-    const url=URL.createObjectURL(file);
-    img.src=url;
-    box.style.display="block";
-  });
-})();
 </script></body>
 </html>
