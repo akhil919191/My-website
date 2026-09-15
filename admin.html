@@ -223,24 +223,55 @@ window.openCase=async function(id){
     $("photoBox").innerHTML="";
     if(current.photo_name){
       try{
-        const path=String(current.photo_name).replace(/^\/+/, "");
-        const signResp=await fetch(
-          URL+"/storage/v1/object/sign/compensation-photos/"+path.split("/").map(encodeURIComponent).join("/"),
-          {
-            method:"POST",
-            headers:authHeaders({"Content-Type":"application/json"}),
-            body:JSON.stringify({expiresIn:3600})
+        let photoValue=String(current.photo_name).trim();
+
+        // If the DB already contains a complete URL, use it directly.
+        if(/^https?:\/\//i.test(photoValue)){
+          $("photoBox").innerHTML='<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b><img class="photo" src="'+esc(photoValue)+'" alt="Application photo" onerror="this.outerHTML=\'<div class="msg err">Photo തുറക്കാൻ കഴിഞ്ഞില്ല.</div>\'"></div>';
+        }else{
+          const path=photoValue
+            .replace(/^\/+/, "")
+            .replace(/^compensation-photos\//i, "");
+
+          // Supabase Storage signed URL endpoint.
+          const signResp=await fetch(
+            URL+"/storage/v1/object/sign/compensation-photos/"+path.split("/").map(encodeURIComponent).join("/"),
+            {
+              method:"POST",
+              headers:authHeaders({"Content-Type":"application/json"}),
+              body:JSON.stringify({expiresIn:3600})
+            }
+          );
+
+          const signText=await signResp.text();
+          let signData=null;
+          try{signData=signText?JSON.parse(signText):null}catch(e){}
+
+          if(!signResp.ok){
+            throw new Error(
+              signData?.message ||
+              signData?.error ||
+              signData?.statusCode ||
+              signText ||
+              ("HTTP "+signResp.status)
+            );
           }
-        );
-        const signText=await signResp.text();
-        let signData=null; try{signData=signText?JSON.parse(signText):null}catch(e){}
-        if(!signResp.ok) throw new Error(signData?.message||signData?.error||signText||("HTTP "+signResp.status));
-        const signed=signData?.signedURL||signData?.signedUrl||signData?.signed_url;
-        if(!signed) throw new Error("Signed photo URL ലഭിച്ചില്ല");
-        const photoUrl=signed.startsWith("http")?signed:(URL+signed);
-        $("photoBox").innerHTML='<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b><img class="photo" src="'+esc(photoUrl)+'" alt="Application photo" onerror="this.outerHTML=\'<div class="msg err">Photo തുറക്കാൻ കഴിഞ്ഞില്ല.</div>\'"></div>';
+
+          const signed=signData?.signedURL||signData?.signedUrl||signData?.signed_url;
+          if(!signed) throw new Error("Signed photo URL ലഭിച്ചില്ല");
+
+          const photoUrl=signed.startsWith("http")
+            ? signed
+            : URL+signed;
+
+          $("photoBox").innerHTML=
+            '<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b>' +
+            '<img class="photo" src="'+esc(photoUrl)+'" alt="Application photo" ' +
+            'onerror="this.outerHTML=\\'<div class=&quot;msg err&quot;>Photo തുറക്കാൻ കഴിഞ്ഞില്ല.</div>\\'">' +
+            '</div>';
+        }
       }catch(e){
-        $("photoBox").innerHTML='<div class="msg err">Photo load failed: '+esc(e.message)+'</div>';
+        $("photoBox").innerHTML='<div class="msg err">📷 Photo load failed: '+esc(e.message)+'</div>';
       }
     }else{
       $("photoBox").innerHTML='<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b><div class="crop">ഫോട്ടോ അപ്‌ലോഡ് ചെയ്തിട്ടില്ല</div></div>';
