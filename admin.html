@@ -277,7 +277,9 @@ window.openCase=async function(id){
 
           $("photoBox").innerHTML=
             '<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b>' +
-            '<img class="photo" src="'+esc(photoUrl)+'" alt="Application photo" ' +
+            '<img class="photo" src="'+esc(photoUrl)+'" alt="Application photo" onerror="this.style.display=\"none\";this.nextElementSibling.style.display=\"block\"">' +
+            '<div class="msg err" style="display:none">Photo തുറക്കാൻ കഴിഞ്ഞില്ല.</div>' +
+            '<div style="margin-top:10px"><a class="primary" href="'+esc(photoUrl)+'" target="_blank" rel="noopener" download>⬇️ ഫോട്ടോ Download</a></div>' +
             '</div>';
         }
       }catch(e){
