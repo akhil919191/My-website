@@ -106,6 +106,8 @@ button{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:
 </select>
 <input id="cropCountInput" type="number" min="1" step="1" inputmode="numeric" placeholder="എണ്ണം (ഉദാ: 4)" style="margin-top:8px">
 <button type="button" id="addCropBtn" style="margin-top:8px">＋ വിള ചേർക്കുക</button>
+    <button type="button" id="saveCropBtn" class="secondary" style="margin-top:8px;width:100%">💾 വിളകളുടെ വിവരം Save</button>
+    <div id="cropSaveStatus" class="small" style="margin-top:8px"></div>
 <div id="cropTags" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>
 <input id="cropAdditional" type="text" placeholder="Additional crop/type ഇവിടെ ടൈപ്പ് ചെയ്യാം" style="margin-top:8px">
 <input type="hidden" id="damagedCropsHidden" name="damaged_crops">
@@ -168,6 +170,10 @@ document.addEventListener("DOMContentLoaded", function(){
   const add=document.getElementById("addCropBtn"), tags=document.getElementById("cropTags"), extra=document.getElementById("cropAdditional"), hidden=document.getElementById("damagedCropsHidden");
   if(!select||!stage||!count||!add||!tags||!hidden) return;
   const crops=[];
+  try{
+    const savedCropDraft=sessionStorage.getItem("compensation_crop_draft");
+    if(savedCropDraft) hidden.value=savedCropDraft;
+  }catch(e){}
   window.selectedCompensationCrops=crops;
   function render(){
     tags.innerHTML="";
@@ -189,7 +195,22 @@ document.addEventListener("DOMContentLoaded", function(){
     select.value=""; stage.value=""; count.value="";
   });
   tags.addEventListener("click",function(e){ if(e.target.dataset.i!==undefined){ crops.splice(Number(e.target.dataset.i),1); render(); }});
-  extra?.addEventListener("input",render); render();
+  extra?.addEventListener("input",render);
+
+  document.getElementById("saveCropBtn")?.addEventListener("click",function(){
+    render();
+    const msg=document.getElementById("cropSaveStatus");
+    if(!hidden.value.trim()){
+      msg.textContent="⚠️ ആദ്യം കുറഞ്ഞത് ഒരു വിള ചേർക്കുക.";
+      msg.style.color="#9b2020";
+      return;
+    }
+    try{ sessionStorage.setItem("compensation_crop_draft", hidden.value); }catch(e){}
+    msg.textContent="✅ വിളകളുടെ വിവരം Save ചെയ്തു.";
+    msg.style.color="#176b45";
+  });
+
+  render();
 });
 </script>
 <script>
@@ -331,6 +352,26 @@ form.addEventListener("submit", async (e)=>{
     return;
   }
 
+  // Always build crop data directly from the selected crop rows.
+  const selectedCrops = Array.isArray(window.selectedCompensationCrops)
+    ? window.selectedCompensationCrops
+    : [];
+  const additionalCrop = val("cropAdditional");
+  const cropParts = selectedCrops.map(x =>
+    String(x.crop).trim()+" – "+String(x.stage).trim()+" – "+String(x.count).trim()+" എണ്ണം"
+  );
+  if(additionalCrop) cropParts.push("Additional: "+additionalCrop);
+  const damagedCropsValue = cropParts.join(", ");
+
+  if(!damagedCropsValue){
+    setStatus("error","⚠️ കുറഞ്ഞത് ഒരു നാശം സംഭവിച്ച വിളയെങ്കിലും ചേർക്കുക.");
+    document.getElementById("cropSelect").focus();
+    return;
+  }
+
+  // Keep hidden field synchronized too.
+  document.getElementById("damagedCropsHidden").value = damagedCropsValue;
+
   const data={
     application_no:appNo || null,
     applicant_name:val("applicant_name"),
@@ -342,7 +383,7 @@ form.addEventListener("submit", async (e)=>{
     wild_animal:val("wild_animal"),
     gun_license:gun,
     forest_crime_accused:forest,
-    damaged_crops:val("damaged_crops"),
+    damaged_crops:damagedCropsValue,
     damage_details:val("damage_details"),
     latitude:val("latitude"),
     longitude:val("longitude"),
@@ -386,6 +427,13 @@ form.addEventListener("submit", async (e)=>{
 
     setStatus("success","✅ <strong>Saved successfully!</strong>");
     form.reset();
+    if(Array.isArray(window.selectedCompensationCrops)){
+      window.selectedCompensationCrops.length=0;
+      const tags=document.getElementById("cropTags");
+      if(tags) tags.innerHTML="";
+      const hidden=document.getElementById("damagedCropsHidden");
+      if(hidden) hidden.value="";
+    }
     selectedPhotoFile=null;
     previewPhoto(null);
     document.getElementById("applicationNoStatus").textContent="";
