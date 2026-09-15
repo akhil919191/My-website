@@ -154,6 +154,24 @@ window.addEventListener("unhandledrejection",function(e){
   if(box) box.innerHTML='<div class="msg err">❌ Login error: '+esc(e.reason?.message||e.reason||"Unknown error")+'</div>';
 });
 
+async function downloadPhoto(url, fileName){
+  const msg=$("photoDownloadMsg");
+  try{
+    if(msg) msg.textContent="Download തയ്യാറാക്കുന്നു...";
+    const r=await fetch(url);
+    if(!r.ok) throw new Error("Download failed (HTTP "+r.status+")");
+    const blob=await r.blob();
+    const objectUrl=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=objectUrl; a.download=fileName||"compensation-photo.jpg";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(objectUrl),2000);
+    if(msg) msg.textContent="✅ Download ആരംഭിച്ചു.";
+  }catch(e){
+    if(msg) msg.textContent="❌ Download failed: "+e.message;
+  }
+}
+
 function authHeaders(extra={}){
   return Object.assign({
     "apikey":KEY,
@@ -234,56 +252,45 @@ window.openCase=async function(id){
     $("photoBox").innerHTML="";
     if(current.photo_name){
       try{
-        let photoValue=String(current.photo_name).trim();
-
-        // If the DB already contains a complete URL, use it directly.
-        if(/^https?:\/\//i.test(photoValue)){
-          $("photoBox").innerHTML='<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b><img class="photo" src="'+esc(photoValue)+'" alt="Application photo" onerror="this.outerHTML=\'<div class="msg err">Photo തുറക്കാൻ കഴിഞ്ഞില്ല.</div>\'"></div>';
-        }else{
-          const path=photoValue
-            .replace(/^\/+/, "")
-            .replace(/^compensation-photos\//i, "");
-
-          // Supabase Storage signed URL endpoint.
-          const signResp=await fetch(
-            URL+"/storage/v1/object/sign/compensation-photos/"+path.split("/").map(encodeURIComponent).join("/"),
-            {
-              method:"POST",
-              headers:authHeaders({"Content-Type":"application/json"}),
-              body:JSON.stringify({expiresIn:3600})
+        let path=String(current.photo_name).trim();
+        if(/^https?:\/\//i.test(path)){
+          try{
+            const u=new URL(path);
+            const marker="/storage/v1/object/";
+            const idx=u.pathname.indexOf(marker);
+            if(idx>=0){
+              let rest=u.pathname.slice(idx+marker.length);
+              rest=rest.replace(/^sign\//,"" ).replace(/^public\//,"" ).replace(/^authenticated\//,"" );
+              const bp=PHOTO_BUCKET+"/";
+              if(rest.startsWith(bp)) rest=rest.slice(bp.length);
+              path=decodeURIComponent(rest);
             }
-          );
-
-          const signText=await signResp.text();
-          let signData=null;
-          try{signData=signText?JSON.parse(signText):null}catch(e){}
-
-          if(!signResp.ok){
-            throw new Error(
-              signData?.message ||
-              signData?.error ||
-              signData?.statusCode ||
-              signText ||
-              ("HTTP "+signResp.status)
-            );
-          }
-
-          const signed=signData?.signedURL||signData?.signedUrl||signData?.signed_url;
-          if(!signed) throw new Error("Signed photo URL ലഭിച്ചില്ല");
-
-          const photoUrl=signed.startsWith("http")
-            ? signed
-            : URL+signed;
-
-          $("photoBox").innerHTML=
-            '<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b>' +
-            '<img class="photo" src="'+esc(photoUrl)+'" alt="Application photo" onerror="this.style.display=\"none\";this.nextElementSibling.style.display=\"block\"">' +
-            '<div class="msg err" style="display:none">Photo തുറക്കാൻ കഴിഞ്ഞില്ല.</div>' +
-            '<div style="margin-top:10px"><a class="primary" href="'+esc(photoUrl)+'" target="_blank" rel="noopener" download>⬇️ ഫോട്ടോ Download</a></div>' +
-            '</div>';
+          }catch(e){}
         }
+        path=path.replace(/^\/+/,"");
+        path=path.replace(/^storage\/v1\/object\/(?:sign|public|authenticated)\//i,"");
+        path=path.replace(/^compensation-photos\//i,"");
+        path=path.split("?")[0].split("#")[0];
+        path=decodeURIComponent(path);
+        if(!path || path.includes("..")) throw new Error("Invalid photo path");
+        const encodedPath=path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+        const signResp=await fetch(URL+"/storage/v1/object/sign/"+PHOTO_BUCKET+"/"+encodedPath,{
+          method:"POST",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify({expiresIn:3600})
+        });
+        const signText=await signResp.text();
+        let signData=null;try{signData=signText?JSON.parse(signText):null}catch(e){}
+        if(!signResp.ok) throw new Error(signData?.message||signData?.error||signData?.statusCode||signText||("HTTP "+signResp.status));
+        const signed=signData?.signedURL||signData?.signedUrl||signData?.signed_url;
+        if(!signed) throw new Error("Signed photo URL ലഭിച്ചില്ല");
+        const photoUrl=signed.startsWith("http")?signed:(URL+signed);
+        const fileName=path.split("/").pop()||"compensation-photo.jpg";
+        window._currentPhotoUrl=photoUrl;
+        window._currentPhotoName=fileName;
+        $("photoBox").innerHTML='<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b><img id="adminPhoto" class="photo" src="'+esc(photoUrl)+'" alt="Application photo"><button id="downloadPhotoBtn" class="green" type="button" style="margin-top:10px;width:100%">⬇️ ഫോട്ടോ Download</button><div id="photoDownloadMsg" class="small" style="margin-top:6px"></div></div>';
+        $("downloadPhotoBtn").onclick=()=>downloadPhoto(window._currentPhotoUrl,window._currentPhotoName);
+        $("adminPhoto").onerror=()=>{$("photoDownloadMsg").textContent="📷 ഫോട്ടോ തുറക്കാൻ കഴിഞ്ഞില്ല."};
       }catch(e){
-        $("photoBox").innerHTML='<div class="msg err">📷 Photo load failed: '+esc(e.message)+'</div>';
+        $("photoBox").innerHTML='<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b><div class="msg err">Photo load failed: '+esc(e.message)+'</div></div>';
       }
     }else{
       $("photoBox").innerHTML='<div class="detail"><b>📷 സ്ഥലം ഫോട്ടോ</b><div class="crop">ഫോട്ടോ അപ്‌ലോഡ് ചെയ്തിട്ടില്ല</div></div>';
