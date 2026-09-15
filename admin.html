@@ -27,7 +27,7 @@ button{border:0;border-radius:10px;padding:9px 12px;font-weight:800;font-size:13
 
 <div id="loginCard" class="card">
 <h2>🔐 Admin Login</h2>
-<input id="email" type="email" placeholder="Admin email" autocomplete="username">
+<input id="email" type="email" value="dyroirulam@gmail.com" readonly autocomplete="username">
 <input id="password" type="password" placeholder="Password" autocomplete="current-password">
 <button id="loginBtn" class="primary" type="button" onclick="login()">Login</button><div id="loginMsg"></div>
 </div>
@@ -119,8 +119,13 @@ function resetPage(){
 }
 
 async function login(){
-  const email=$("email").value.trim(), password=$("password").value;
-  if(!email||!password){message("loginMsg","Email, password രണ്ടും നൽകുക.");return}
+  const email=$("email").value.trim().toLowerCase(), password=$("password").value;
+  // Only the configured admin account is allowed to enter this panel.
+  if(email!==ADMIN_EMAIL){
+    message("loginMsg","❌ Unauthorized Admin.");
+    return;
+  }
+  if(!password){message("loginMsg","Password നൽകുക.");return}
   $("loginBtn").disabled=true;
   message("loginMsg","Login ചെയ്യുന്നു...",true);
   try{
@@ -135,6 +140,13 @@ async function login(){
       return;
     }
     if(!d.access_token){message("loginMsg","❌ Login session ലഭിച്ചില്ല.");return}
+    // Verify the authenticated Supabase account too; do not trust only the input field.
+    const authenticatedEmail=String(d.user?.email||"").trim().toLowerCase();
+    if(authenticatedEmail!==ADMIN_EMAIL){
+      accessToken="";
+      message("loginMsg","❌ Unauthorized Admin account.");
+      return;
+    }
     accessToken=d.access_token;
     show("loginCard",false); show("app",true);
     show("reportCard",false); show("detailCard",false); show("editCard",false);
