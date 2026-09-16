@@ -149,8 +149,9 @@ async function login(){
     }
     accessToken=d.access_token;
     show("loginCard",false); show("app",true);
-    show("reportCard",false); show("detailCard",false); show("editCard",false);
+    show("reportCard",true); show("detailCard",false); show("editCard",false);
     message("loginMsg","");
+    await loadRows();
   }catch(e){
     message("loginMsg","❌ Network/Login error: "+(e.message||e));
   }finally{$("loginBtn").disabled=false}
@@ -217,7 +218,10 @@ $("reportBtn").onclick=async()=>{
 async function loadRows(){
   $("list").textContent="Loading...";
   try{
-    rows=await api("/rest/v1/compensation_cases?select=*&order=created_at.asc");
+    rows=await api("/rest/v1/compensation_cases?select=*");
+    if(rows && rows.length && rows[0].created_at){
+      rows.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+    }
     render(rows||[]);
   }catch(e){
     $("list").innerHTML='<div class="msg err">'+esc(e.message)+'</div>';
